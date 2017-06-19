@@ -18,7 +18,7 @@ The high level features of this ManageIQ extension.
   * VMWare DRS cluster best fit with scope placement
   * VMWare customized folder placement
 * Service
-  * Thread safe (multiple simaltaneous provisons) set VM names method with user provided prefix
+  * Thread safe (multiple simultaneous provisions) set VM names method with user provided prefix
   * Provision complete email with hostname ands IPs
 * Logging helpers
 
