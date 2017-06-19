@@ -1,0 +1,13 @@
+---
+object_type: domain
+version: 1.0
+object:
+  attributes:
+    name: RedHatConsulting_Utilities
+    description: Shared utilities automate utilities developed by Red Hat Consulting.
+    display_name: 
+    priority: 2
+    enabled: true
+    tenant_id: 10000000000001
+    source: user
+    top_level_namespace: 
