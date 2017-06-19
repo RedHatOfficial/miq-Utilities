@@ -11,14 +11,16 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 # Features
 The high level features of this ManageIQ extension.
 
-* Method for setting VM custom attributes
-* Method for setting VM tags
-* Method for starting VM
-* Thread safe (multiple simaltaneous provisons) set VM names method with user provided prefix
-* VMWare DRS cluster best fit with scope placement
-* VMWare customized folder placement
-* Service Provision complete email with hostname ands IPs
-* Logging methods
+* VM
+  * set custom attributes
+  * set tags
+  * start
+  * VMWare DRS cluster best fit with scope placement
+  * VMWare customized folder placement
+* Service
+  * Thread safe (multiple simaltaneous provisons) set VM names method with user provided prefix
+  * Provision complete email with hostname ands IPs
+* Logging helpers
 
 # Install
 0. Install dependencies
