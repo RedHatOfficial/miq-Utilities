@@ -4,7 +4,7 @@ version: 1.0
 object:
   attributes:
     name: RedHatConsulting_Utilities
-    description: Shared utilities automate utilities developed by Red Hat Consulting.
+    description: ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domains.
     display_name: 
     priority: 2
     enabled: true
