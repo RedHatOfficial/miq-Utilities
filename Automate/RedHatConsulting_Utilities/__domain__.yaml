@@ -4,10 +4,9 @@ version: 1.0
 object:
   attributes:
     name: RedHatConsulting_Utilities
-    description: ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domains.
-    display_name: 
-    priority: 2
+    description: ManageIQ Automate Domain of shared utilities to be used by other
+      ManageIQ domains.
+    display_name:  Utilities
     enabled: true
-    tenant_id: 10000000000001
     source: user
     top_level_namespace: 
