@@ -11,6 +11,8 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 # Features
 The high level features of this ManageIQ extension.
 
+* Service
+  * Thread safe (multiple simultaneous provisions) set VM names method with user provided prefix for use with service provisoning state machine
 * VM
   * set custom attributes
   * set tags
@@ -18,7 +20,7 @@ The high level features of this ManageIQ extension.
   * VMWare DRS cluster best fit with scope placement
   * VMWare customized folder placement
 * Service
-  * Thread safe (multiple simultaneous provisions) set VM names method with user provided prefix
+  * `Infrastructure/VM/Provisioning/Naming/vmname` implimentation with support for variable suffix counter length and specified domain name
   * Provision complete email with hostname ands IPs
 * Logging helpers
 
