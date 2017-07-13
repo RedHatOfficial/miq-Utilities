@@ -27,6 +27,16 @@ def error(msg)
   exit MIQ_STOP
 end
 
+# Get the vm provsining customization configuration.
+#
+# @return VM provisining configuration
+VM_PROVISIONING_CONFIG_URI = 'Infrastructure/VM/Provisioning/Configuration/default'
+def get_vm_provisioning_config()
+  provisioning_config = $evm.instantiate(VM_PROVISIONING_CONFIG_URI)
+  error("VM Provisioning Configuration not found") if provisioning_config.nil?
+  
+  return provisioning_config
+end
 
 # Calls a user provided block for each grand child of the given parent.
 #
@@ -182,6 +192,11 @@ begin
   $evm.log(:info, "domain_name => '#{domain_name}'") if @DEBUG
   error("dialog_domain_name not found in ServiceTemplateProvisionTask dialog options: { :id => '#{task.id}', :miq_request_id => '#{task.miq_request.id}' }") if domain_name.blank?
 
+  # get the VM name suffix counter length
+  vm_provisioning_config        = get_vm_provisioning_config()
+  vm_name_suffix_counter_length = vm_provisioning_config['vm_name_suffix_counter_length']
+  $evm.log(:info, "vm_name_suffix_counter_length_counter_length => '#{vm_name_suffix_counter_length}'") if @DEBUG
+  
   #
   # IMPORTANT
   #   A lock is needed for generating the VM names in the case where two or more services get requested at the same time.
@@ -208,7 +223,7 @@ begin
     # for each VM request generate a unique name and keep track of the names used in this batch
     for_each_grand_child_task(task) do |grand_child_task|
       # get the unique vm name
-      vm_name = get_vm_name(vm_prefix, domain_name, used_vm_names)
+      vm_name = get_vm_name(vm_prefix, domain_name, used_vm_names, vm_name_suffix_counter_length)
       used_vm_names.push(vm_name)
     
       # set the target vm name
