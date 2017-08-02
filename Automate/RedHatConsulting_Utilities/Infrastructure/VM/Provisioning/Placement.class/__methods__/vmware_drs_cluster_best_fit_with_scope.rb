@@ -9,7 +9,7 @@
 #        C. Storage must be tagged with `Provisioning Scope - All` or `Provisioning Scope - USER GROUP`
 #        D. Storage is then picked using logic from `vmware_best_fit_least_utilized`
 #
-@DEBUG = true
+@DEBUG = false
 
 # Log an error and exit.
 #
