@@ -51,11 +51,13 @@ end
 # Creates and executes a provision request for provisioning new VM(s) to an existing service using the origional provision values form that service.
 # Essentially this "scales up" a serivce with like VM(s).
 #
-# @param task              Origional Service Template Provision Task used to create the Service the new VM(s) will be provisioned too
-# @param tags              Hash of tags to apply to the newly provisoned VM(s)
-# @param number_of_vms     Number of new VM(s) to provision to the existing service (added to ws_values)
-# @param additional_values (aka: ws_values) Additional key/value paris to pass to the VM provisioning request
-def create_provision_request_from_service_template_provision_task(task, tags = {}, number_of_vms, additional_values)
+#
+# @param number_of_vms            Number of new VM(s) to provision to the existing service (added to ws_values)
+# @param task                     Origional Service Template Provision Task used to create the Service the new VM(s) will be provisioned too
+# @param tags                     Hash of tags to apply to the newly provisoned VM(s)
+# @param additional_values        (aka: ws_values) Additional key/value paris to pass to the VM provisioning request
+# @param create_seperate_requests If true, creates seperate requests for multiple VM(s), else if False creates one request for multiple VM(s) 
+def create_provision_request_from_service_template_provision_task(number_of_vms, task, tags = {}, additional_values = {}, create_seperate_requests = true)
   user = $evm.root['user']
   dump_object("Current User", user) if @DEBUG
   
@@ -93,8 +95,12 @@ def create_provision_request_from_service_template_provision_task(task, tags = {
   $evm.log(:info, "ws_values from origional_vm_task_options: #{ws_values}") if @DEBUG
   
   ws_values.merge!(YAML.load(task.options[:parsed_dialog_options])[0])
+  if create_seperate_requests
+    ws_values.merge!({:number_of_vms => 1})
+  else
+    ws_values.merge!({:number_of_vms => number_of_vms})
+  end
   ws_values.merge!(additional_values)
-  ws_values.merge!({:number_of_vms => number_of_vms})
   ws_values.each {|k,v| ws_values[k] = v.kind_of?(Array) ? v[0] : v }                            # change weird [1, "1"] type values to just the first value
   ws_values.delete_if {|k,v| v.nil? || (v.kind_of?(Array) && v.select{|a_v| !a_v.nil?}.empty?) } # remove nil values
   ws_values.each {|k,v| ws_values[k] = v.is_a?(Numeric) ? v.to_s : v}                            # convert all numbers to strings
@@ -136,19 +142,29 @@ def create_provision_request_from_service_template_provision_task(task, tags = {
   build_request[:ws_values]        = ws_values
   build_request[:ems_custom_attrs] = {}
   build_request[:miq_custom_attrs] = {}
-
-  #Create the actual provision request
-  $evm.log(:info, "Execute create_provision_request: #{build_request}")
-  $evm.execute(
-    'create_provision_request', 
-    build_request[:version],
-    build_request[:template_fields].stringify_keys,
-    build_request[:vm_fields].stringify_keys, 
-    build_request[:requester].stringify_keys,
-    build_request[:tags].stringify_keys,
-    build_request[:ws_values].stringify_keys,
-    build_request[:ems_custom_attrs].stringify_keys,
-    build_request[:miq_custom_attrs].stringify_keys)
+  
+  # determine the number of requests to make
+  if create_seperate_requests
+    $evm.log(:info, "Execute '#{number_of_vms}' create_provision_requests each for 1 VM: #{build_request}")
+    number_of_requests = number_of_vms
+  else
+    $evm.log(:info, "Execute '#{1}' create_provision_requests for '#{number_of_requests}' VMs: #{build_request}")
+    number_of_requests = 1
+  end
+  
+  #Create the actual provision request(s)
+  number_of_requests.times do |count|
+    $evm.execute(
+      'create_provision_request', 
+      build_request[:version],
+      build_request[:template_fields].stringify_keys,
+      build_request[:vm_fields].stringify_keys, 
+      build_request[:requester].stringify_keys,
+      build_request[:tags].stringify_keys,
+      build_request[:ws_values].stringify_keys,
+      build_request[:ems_custom_attrs].stringify_keys,
+      build_request[:miq_custom_attrs].stringify_keys)
+  end
 end
 
 begin
@@ -181,9 +197,9 @@ begin
   
   # create the provisioning request
   create_provision_request_from_service_template_provision_task(
-    task,
-    {}, 
     number_of_vms,
+    task,
+    {},
     {
       :vm_name_suffix_counter_length => vm_name_suffix_counter_length
     }
