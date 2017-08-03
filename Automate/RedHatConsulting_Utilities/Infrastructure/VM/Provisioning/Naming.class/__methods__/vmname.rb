@@ -71,14 +71,14 @@ module ManageIQ
               end
               
               def domain_name()
-                domain_name = provision_object.get_option(:ws_values)[:domain_name]
+                domain_name = provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[:domain_name]
                 domain_name = ".#{domain_name}" if !domain_name.nil?
-                @handle.log(:info, "domain_name: \"#{domain_name}\"")
+                @handle.log(:info, "domain_name: \"#{domain_name}\"") if @DEBUG
                 return domain_name
               end
               
               def suffix_counter_length()
-                return provision_object.get_option(:ws_values)[:vm_name_suffix_counter_length].nil? ?
+                return provision_object.get_option(:ws_values).nil? || provision_object.get_option(:ws_values)[:vm_name_suffix_counter_length].nil? ?
                   3 : provision_object.get_option(:ws_values)[:vm_name_suffix_counter_length]
               end
             end
