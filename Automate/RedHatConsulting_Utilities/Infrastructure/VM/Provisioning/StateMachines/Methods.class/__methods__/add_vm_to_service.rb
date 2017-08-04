@@ -32,13 +32,15 @@ begin
   
   # get the service
   ws_values  = prov.options[:ws_values]
-  service_id = ws_values[:service_id]
+  service_id = ws_values[:service_id] if ws_values
   if service_id
     service = $evm.vmdb('service').find_by_id(service_id)
   
     # add the VM to the service
     vm.add_to_service(service)
     $evm.log(:info, "Added VM to service: { :vm => '#{vm.name}', :service => '#{service.name}', :service_id => '#{service.id}' }")
+  elsif vm.service
+    $evm.log(:info, "ID of Service to add VM to not found, but VM is already a member of a service: '#{vm.service.name}'")
   else
     $evm.log(:warn, "ID of Service to add VM to not found.")
   end
