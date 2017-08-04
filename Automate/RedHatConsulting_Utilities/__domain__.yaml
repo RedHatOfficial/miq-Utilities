@@ -6,7 +6,7 @@ object:
     name: RedHatConsulting_Utilities
     description: ManageIQ Automate Domain of shared utilities to be used by other
       ManageIQ domains.
-    display_name:  Utilities
+    display_name: Utilities
     enabled: true
     source: user
     top_level_namespace: 
