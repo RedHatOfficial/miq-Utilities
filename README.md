@@ -20,7 +20,7 @@ The high level features of this ManageIQ extension.
   * VMWare DRS cluster best fit with scope placement
   * VMWare customized folder placement
 * Service
-  * `Infrastructure/VM/Provisioning/Naming/vmname` implimentation with support for variable suffix counter length and specified domain name
+  * `Infrastructure/VM/Provisioning/Naming/vmname` implementation with support for variable suffix counter length and specified domain name
   * Provision complete email with hostname ands IPs
   * Provision new VM(s) to an existing service
 * Logging helpers
