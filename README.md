@@ -31,5 +31,5 @@ The high level features of this ManageIQ extension.
 2. Import Datastore via git
 3. Git URL: `https://github.com/rhtconsulting/miq-Utilities.git`
 4. Submit
-5. Select Branc/Tag to syncronize with
+5. Select Branch/Tag to synchronize with
 6. Submit
