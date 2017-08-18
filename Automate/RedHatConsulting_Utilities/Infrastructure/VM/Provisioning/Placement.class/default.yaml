@@ -9,7 +9,7 @@ object:
     description: 
   fields:
   - redhat:
-      value: redhat_best_fit_cluster
+      value: redhat_best_placement_with_scope
   - vmware:
       value: vmware_drs_cluster_best_fit_with_scope
   - microsoft:
