@@ -147,6 +147,7 @@ end
 # @param used_vm_names         List of VM names already used (not already in VMDB)
 # @param suffix_counter_length Length of the counter to suffix the prefix with, ex 4 would mean '#{vm_prefix}0000'
 def get_vm_name(vm_prefix, domain_name, used_vm_names, suffix_counter_length = DEFAULT_SUFFIX_COUNTER_LENGTH)
+  suffix_counter_length ||= DEFAULT_SUFFIX_COUNTER_LENGTH
   counter_max = ("9" * suffix_counter_length).to_i
   vm_name = nil
   for i in (1..(counter_max+1))
