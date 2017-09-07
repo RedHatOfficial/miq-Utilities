@@ -87,9 +87,9 @@ begin
     # No DRS cluster found - try hosts
     #############################
   
-    evm.log("info", "Sorted host Order:<#{HOST_SORT_ORDER.inspect}> Results:<#{sort_data.inspect}>")
-    active_prov_data = prov.check_quota(:active_provisions)
     sort_data = []
+    $evm.log("info", "Sorted host Order:<#{HOST_SORT_ORDER.inspect}> Results:<#{sort_data.inspect}>")
+    active_prov_data = prov.check_quota(:active_provisions)
     ems.hosts.each do |h|
       #############################
       # Only consider hosts that have the required tags
