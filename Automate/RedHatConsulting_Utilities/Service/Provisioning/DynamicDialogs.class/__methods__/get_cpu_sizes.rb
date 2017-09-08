@@ -2,6 +2,9 @@ MIN = 1
 MAX = 12
 
 begin
+  # If there isn't a vmdb_object_type yet just exit. The method will be recalled with an vmdb_object_type
+  exit MIQ_OK unless $evm.root['vmdb_object_type']
+  
   values = {}
   (MIN..MAX).each { |k| values[k] = k }
   
