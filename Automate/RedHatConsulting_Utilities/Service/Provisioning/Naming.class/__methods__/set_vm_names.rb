@@ -51,15 +51,15 @@ def for_each_grand_child_task(parent)
   end
 end
 
-# Calls a user provided block for each active or pending requests.
+# Calls a user provided block for each alive (active, pending, queued) requests.
 # Optionally does not call for the given current request.
 #
 # @param current_request             Optional. Current request to not call the block for.
-# @param request_type                The type of active or pending requests to iterate over
-# @block |active_or_pending_request| Call this block for each active or pending request.
-def for_each_active_or_pending_request(current_request = nil, request_type = 'ServiceTemplateProvisionRequest')
+# @param request_type                The type of alive requests to iterate over
+# @block |active_or_pending_request| Call this block for each alive request.
+def for_each_alive_request(current_request = nil, request_type = 'ServiceTemplateProvisionRequest')
   $evm.vmdb(:miq_request).all.each do |request|
-    if ( (request.request_state == 'active' || request.request_state == 'pending') &&
+    if ( (request.request_state == 'active' || request.request_state == 'pending' || request.request_state == 'queued') &&
          (request_type.nil? || request.type == request_type) &&
          (current_request.nil? || request.id != current_request.id) )
          
@@ -97,7 +97,7 @@ def with_service_template_provision_request_naming_lock(current_request, vm_pref
     # determine if any active ServiceTemplateProvisionRequests are trying to get a lock or have the lock for the given vm prefix
     $evm.log(:info, "Other Active ServiceTemplateProvisionRequests: { current_request_id => #{current_request.id} }") if @DEBUG
     existing_lock = false
-    for_each_active_or_pending_request(current_request) do |request|
+    for_each_alive_request(current_request) do |request|
       request_vm_naming_lock_attempt = request.get_option(:vm_naming_lock_attempt)
       request_vm_naming_lock         = request.get_option(:vm_naming_lock)
       $evm.log(:info, "Found active ServiceTemplateProvisionRequest: { :id => #{request.id}, :vm_naming_lock_attempt => '#{request_vm_naming_lock_attempt}', :vm_naming_lock => '#{request_vm_naming_lock}' }") if @DEBUG
@@ -209,7 +209,7 @@ begin
     
     # get the VM names on all current active requests so as not to conflict with those
     $evm.log(:info, "Other Active ServiceTemplateProvisionRequests: { current_task_id => #{task.id}, current_request_id => #{current_request.id} }") if @DEBUG
-    for_each_active_or_pending_request(current_request) do |request|
+    for_each_alive_request(current_request) do |request|
       $evm.log(:info, "\tActive ServiceTemplateProvisionRequest VM Names: { other_active_request_id => #{request.id} }") if @DEBUG
       
       for_each_grand_child_task(request) do |grand_child_task|
