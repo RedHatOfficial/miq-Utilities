@@ -40,7 +40,7 @@
 #         'dialog_disk_3_bootable          => false
 #       }
 #
-@DEBUG = true
+@DEBUG = false
 
 # Perform a method retry for the given reason
 #
