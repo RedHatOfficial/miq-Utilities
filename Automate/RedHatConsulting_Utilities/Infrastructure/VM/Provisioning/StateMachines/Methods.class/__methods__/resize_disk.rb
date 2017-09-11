@@ -1,11 +1,13 @@
 # Adds the given VM to service specified on the provision request.
 #
 # PARAMETERS
-#   EVM ROOT
+#   $evm.root
 #     miq_provision - VM Provisining request contianing the VM to resize the disk of
 #                     Either this or vm are required.
 #     vm            - VM to resize the disk of.
 #                     Either this or miq_provision are required.
+#
+#  $evm.root['miq_provision'].option || $evm.root.attributes
 #     disk_number   - Number of the disk to resize.
 #                     Optional.
 #                     Defaults to 1.
@@ -14,7 +16,7 @@
 #
 # SEE
 #   http://talk.manageiq.org/t/how-can-i-resize-a-vmware-disk/381/4
-@DEBUG = true
+@DEBUG = false
 
 # Log an error and exit.
 #
@@ -34,11 +36,14 @@ def dump_root()
   $evm.log(:info, "")
 end
 
-# TODO: DOC ME
+# Perform a method retry for the given reason
+#
+# @param seconds Number of seconds to wait before next retry
+# @param reason  Reason for the retry
 def automate_retry(seconds, reason)
-  $evm.root['ae_result'] = 'retry'
+  $evm.root['ae_result']         = 'retry'
   $evm.root['ae_retry_interval'] = "#{seconds.to_i}.seconds"
-  $evm.root['ae_reason'] = reason
+  $evm.root['ae_reason']         = reason
 
   $evm.log(:info, "Retrying #{@method} after #{seconds} seconds, because '#{reason}'")
   exit MIQ_OK
