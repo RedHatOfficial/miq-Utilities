@@ -119,36 +119,42 @@ begin
   # get parameters
   disk_number = options['dialog_disk_number'] || options[:dialog_disk_number] || options['disk_number'] || options[:disk_nubmer] || 1
   disk_size   = options['dialog_disk_size']   || options[:dialog_disk_size]   || options['disk_size']   || options[:disk_size]
-  error("disk_number not found") if disk_number.nil?
-  error("disk_size not found")   if disk_size.nil?
-
-  disk_number = disk_number.to_i
-  error("Invalid Disk Number: #{disk_number}") if disk_number.zero?
-
-  disk_size = disk_size.to_i
-  error("Invalid Disk Size: #{disk_number}") if disk_size <= 0
-  disk_size_kb = disk_size * (1024**2)
   
-  $evm.log(:info, "vm           => #{vm.name}")      if @DEBUG
-  $evm.log(:info, "vendor       => #{vm.vendor}")    if @DEBUG
-  $evm.log(:info, "disk_number  => #{disk_number}")  if @DEBUG
-  $evm.log(:info, "disk_size    => #{disk_size}")    if @DEBUG
-  $evm.log(:info, "disk_size_kb => #{disk_size_kb}") if @DEBUG
+  # only resize disk if disk number and disk size are specified
+  if !disk_number.nil? && !disk_size.nil?
+    error("disk_number not found") if disk_number.nil?
+    error("disk_size not found")   if disk_size.nil?
+
+    disk_number = disk_number.to_i
+    error("Invalid Disk Number: #{disk_number}") if disk_number.zero?
+
+    disk_size = disk_size.to_i
+    error("Invalid Disk Size: #{disk_number}") if disk_size <= 0
+    disk_size_kb = disk_size * (1024**2)
   
-  # resize disk
-  begin
-    disk_number -= 1 # Subtract 1 from the disk_number since VMware starts at 0 and CFME start at 1
-    resizeDisk(vm, disk_number, disk_size_kb)
-  rescue => e
-    if e.message =~ /VimFault/
-      $evm.log(:warn, "Encountered VimFault: #{e.inspect}")
-      automate_retry(30, "Encountered VimFault #{e.inspect}")
+    $evm.log(:info, "vm           => #{vm.name}")      if @DEBUG
+    $evm.log(:info, "vendor       => #{vm.vendor}")    if @DEBUG
+    $evm.log(:info, "disk_number  => #{disk_number}")  if @DEBUG
+    $evm.log(:info, "disk_size    => #{disk_size}")    if @DEBUG
+    $evm.log(:info, "disk_size_kb => #{disk_size_kb}") if @DEBUG
+  
+    # resize disk
+    begin
+      disk_number -= 1 # Subtract 1 from the disk_number since VMware starts at 0 and CFME start at 1
+      resizeDisk(vm, disk_number, disk_size_kb)
+    rescue => e
+      if e.message =~ /VimFault/
+        $evm.log(:warn, "Encountered VimFault: #{e.inspect}")
+        automate_retry(30, "Encountered VimFault #{e.inspect}")
+      end
+
+      $evm.log(:error, "e: #{e}")
+      $evm.log(:error, "e.inspect: #{e.inspect}")
+      $evm.log(:error,"[#{e}]\n#{e.backtrace.join("\n")}")
+      error(e.message)
     end
-
-    $evm.log(:error, "e: #{e}")
-    $evm.log(:error, "e.inspect: #{e.inspect}")
-    $evm.log(:error,"[#{e}]\n#{e.backtrace.join("\n")}")
-    error(e.message)
+  else
+    $evm.log(:warn, 'No disk_number or disk_size specified so not resiszing disk.')
   end
 rescue => err
   error("[#{err}]\n#{err.backtrace.join("\n")}")
