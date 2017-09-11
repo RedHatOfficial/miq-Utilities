@@ -23,6 +23,8 @@ The high level features of this ManageIQ extension.
   * `Infrastructure/VM/Provisioning/Naming/vmname` implementation with support for variable suffix counter length and specified domain name
   * Provision complete email with hostname ands IPs
   * Provision new VM(s) to an existing service
+  * Resize primary VM disk
+  * Add additional disks to VM
 * Logging helpers
 
 # Install
