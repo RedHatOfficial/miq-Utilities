@@ -1,0 +1,12 @@
+---
+object_type: method
+version: 1.0
+object:
+  attributes:
+    name: add_disks_to_vm
+    display_name: AddDisksToVM
+    description: 
+    scope: instance
+    language: ruby
+    location: inline
+  inputs: []
