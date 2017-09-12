@@ -11,7 +11,7 @@
 #     disk_#_size             - Size of the disk to add in gigabytes.
 #                               Required.
 #                               Maybe prefixed with 'dialog_'.
-#     disk_#disk_#_dependent - Thin provision, or thick provision disk.
+#     disk_#_thin_provision   - Thin provision, or thick provision disk.
 #                               Optional.
 #                               Default is true.
 #                               Maybe prefixed with 'dialog_'.
