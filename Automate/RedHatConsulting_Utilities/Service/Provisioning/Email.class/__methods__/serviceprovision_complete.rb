@@ -53,19 +53,19 @@ def send_service_provision_complete_email(request, service, to, from)
   body += "</table>"
 
   # Send email
-  $evm.log("info", "Sending email to <#{to}> from <#{from}> subject: <#{subject}>")
-  $evm.log("info", "Sending email body: #{body}") if @DEBUG
+  $evm.log("info", "Sending email to <#{to}> from <#{from}> subject: <#{subject}>") if @DEBUG
+  $evm.log("info", "Sending email body: #{body}")                                   if @DEBUG
   $evm.execute(:send_email, to, from, subject, body)
   
   $evm.log('info', "END: send_service_provision_complete_email") if @DEBUG
 end
 
 begin
-  # get service task, request, destination
-  task        = $evm.root['service_template_provision_task']
+  # get service task, request, service
+  task    = $evm.root['service_template_provision_task']
   error("service_template_provision_task not set") if task.nil?
-  request     = task.miq_request
-  destination = task.destination
+  request = task.miq_request
+  service = task.destination
   
   # determine destiation email
   requester       = request.requester
@@ -78,13 +78,15 @@ begin
   end
   if !owner_email.nil?
     to += "#{owner_email};"
-  end  
-  error("No Requestor or Owner email address(es) found to send service provision complete email to.") if to.blank?
+  end
+  $evm.create_notification(:level => 'warning', :message => "No Owner or Requester email address(es) found to send service provision complete notification to [#{destination.name}]") if to.blank?
   
   # Get from_email_address from model
   from = $evm.object['from_email_address']
-  error("No from email address configured for sending service provsiion complete email from.") if from.blank?
+  error("from_email_address not found") if from.blank?
   
   # send the email
-  send_service_provision_complete_email(request, destination, to, from)
+  if !to.blank?
+    send_service_provision_complete_email(request, service, to, from)
+  end
 end
