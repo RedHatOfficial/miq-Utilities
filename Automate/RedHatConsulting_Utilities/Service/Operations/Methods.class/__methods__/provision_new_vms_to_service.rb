@@ -145,10 +145,10 @@ def create_provision_request_from_service_template_provision_task(number_of_vms,
   
   # determine the number of requests to make
   if create_seperate_requests
-    $evm.log(:info, "Execute '#{number_of_vms}' create_provision_requests each for 1 VM: #{build_request}")
+    $evm.log(:info, "Execute '#{number_of_vms}' create_provision_requests for '1' VM each: #{build_request}")
     number_of_requests = number_of_vms
   else
-    $evm.log(:info, "Execute '#{1}' create_provision_requests for '#{number_of_requests}' VMs: #{build_request}")
+    $evm.log(:info, "Execute '1' create_provision_requests for '#{number_of_requests}' VMs each: #{build_request}")
     number_of_requests = 1
   end
   
