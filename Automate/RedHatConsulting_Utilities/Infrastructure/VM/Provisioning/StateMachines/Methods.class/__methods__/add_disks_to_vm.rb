@@ -1,32 +1,35 @@
 # Adds disks to an existing VM.
 #
 # PARAMETERS
-#   $evm.root
-#     miq_provision - VM Provisining request contianing the VM to resize the disk of
-#                     Either this or vm are required.
-#     vm            - VM to resize the disk of.
-#                     Either this or miq_provision are required.
+#   dialog_disk_option_prefix - Prefix of disk dialog options.
+#                               Default is 'disk'
+#   default_bootable          - Default value for whether a disk should be bootable if no disk specific value is passed.
+#                               Default is false.
+#   miq_provision             - VM Provisining request contianing the VM to resize the disk of
+#                               Either this or vm are required.
+#   vm                        - VM to resize the disk of.
+#                               Either this or miq_provision are required.
 #
 #   $evm.root['miq_provision'].option || $evm.root.attributes
-#     disk_#_size             - Size of the disk to add in gigabytes.
-#                               Required.
-#                               Maybe prefixed with 'dialog_'.
-#     disk_#_thin_provision   - Thin provision, or thick provision disk.
-#                               Optional.
-#                               Default is true.
-#                               Maybe prefixed with 'dialog_'.
-#     disk_#_dependent        - Whether new disk is dependent.
-#                               Optional.
-#                               Default is true.
-#                               Maybe prefixed with 'dialog_'.
-#     disk_#_persistent       - Whether new disk is persistent.
-#                               Optional.
-#                               Default is true.
-#                               Maybe prefixed with 'dialog_'.
-#     disk_#_bootable         - Whether new disk is bootable.
-#                               Optional.
-#                               Default is false.
-#                               Maybe prefixed with 'dialog_'.
+#     #{dialog_disk_option_prefix}_#_size           - Size of the disk to add in gigabytes.
+#                                                     Required.
+#                                                     Maybe prefixed with 'dialog_'.
+#     #{dialog_disk_option_prefix}_#_thin_provision - Thin provision, or thick provision disk.
+#                                                     Optional.
+#                                                     Default is true.
+#                                                     Maybe prefixed with 'dialog_'.
+#     #{dialog_disk_option_prefix}_#_dependent      - Whether new disk is dependent.
+#                                                     Optional.
+#                                                     Default is true.
+#                                                     Maybe prefixed with 'dialog_'.
+#     #{dialog_disk_option_prefix}_#_persistent     - Whether new disk is persistent.
+#                                                     Optional.
+#                                                     Default is true.
+#                                                     Maybe prefixed with 'dialog_'.
+#     #{dialog_disk_option_prefix}_#_bootable       - Whether new disk is bootable.
+#                                                     Optional.
+#                                                     Default is #{default_bootable}.
+#                                                     Maybe prefixed with 'dialog_'.
 #
 #     EX:
 #       {
@@ -55,6 +58,42 @@ def automate_retry(seconds, reason)
   exit MIQ_OK
 end
 
+# There are many ways to attempt to pass parameters in Automate.
+# This function checks all of them in priorty order as well as checking for symbol or string.
+#
+# Order:
+#   1. Inputs
+#   2. Current
+#   3. Object
+#   4. Root
+#   5. State
+#
+# @return Value for the given parameter or nil if none is found
+def get_param(param)  
+  # check if inputs has been set for given param
+  param_value ||= $evm.inputs[param.to_sym]
+  param_value ||= $evm.inputs[param.to_s]
+  
+  # else check if current has been set for given param
+  param_value ||= $evm.current[param.to_sym]
+  param_value ||= $evm.current[param.to_s]
+ 
+  # else cehck if current has been set for given param
+  param_value ||= $evm.object[param.to_sym]
+  param_value ||= $evm.object[param.to_s]
+  
+  # else check if param on root has been set for given param
+  param_value ||= $evm.root[param.to_sym]
+  param_value ||= $evm.root[param.to_s]
+  
+  # check if state has been set for given param
+  param_value ||= $evm.get_state_var(param.to_sym)
+  param_value ||= $evm.get_state_var(param.to_s)
+
+  $evm.log(:info, "{ '#{param}' => '#{param_value}' }") if @DEBUG
+  return param_value
+end
+
 begin
   # get parameters
   $evm.log(:info, "$evm.root['vmdb_object_type'] => '#{$evm.root['vmdb_object_type']}'.") if @DEBUG
@@ -72,6 +111,9 @@ begin
   error("vm not found")      if vm.blank?
   error("options not found") if options.blank?
   
+  disk_option_prefix = get_param(:dialog_disk_option_prefix)
+  default_bootable   = get_param(:default_bootable)
+  
   # ensure VM storage is detected so new VM disks can be added to same storage
   if vm.storage.nil?
     $evm.log(:info, "VM storage not detected yet, perform VM refresh and retry") if @DEBUG
@@ -84,9 +126,9 @@ begin
   
   # collect new disk info
   new_disks = {}
-  options.select { |option, value| option.to_s =~ /^(dialog_)?disk_([0-9]+)_/ }.each do |disk_option, disk_value|
+  options.select { |option, value| option.to_s =~ /^(dialog_)?#{disk_option_prefix}_([0-9]+)_/ }.each do |disk_option, disk_value|
     # determine new disk attribute
-    captures  = disk_option.to_s.match(/disk_([0-9]+)_(.*)/)
+    captures  = disk_option.to_s.match(/#{disk_option_prefix}_([0-9]+)_(.*)/)
     disk_num  = captures[1]
     disk_attr = captures[2]
     
@@ -104,7 +146,7 @@ begin
     thin_provisioned = disk_options['thin_provisioned'] || true
     dependent        = disk_options['dependent']        || true
     persistent       = disk_options['persistent']       || true
-    bootable         = disk_options['bootable']         || false
+    bootable         = disk_options['bootable']         || default_bootable
     
     # don't add disks with a size of 0
     if disk_options['size'].nil? || disk_options['size'] == 0

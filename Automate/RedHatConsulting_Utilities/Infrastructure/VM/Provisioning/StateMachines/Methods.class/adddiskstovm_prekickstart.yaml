@@ -1,0 +1,12 @@
+---
+object_type: instance
+version: 1.0
+object:
+  attributes:
+    display_name: 
+    name: AddDisksToVM_PreKickstart
+    inherits: 
+    description: 
+  fields:
+  - execute:
+      value: add_disks_to_vm(dialog_disk_option_prefix => 'disk_pre_kickstart')
