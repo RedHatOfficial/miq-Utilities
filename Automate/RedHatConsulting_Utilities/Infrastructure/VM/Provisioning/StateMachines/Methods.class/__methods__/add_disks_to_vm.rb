@@ -172,11 +172,11 @@ begin
       nil, # API want's this to be nil, why it asks for it is unknown....
       size_mb,
       {
-        :datastore       => datastore_name,
-        :thinProvisioned => thin_provisioned,
-        :dependent       => dependent,
-        :persistent      => persistent,
-        :bootable        => bootable
+        :datastore        => datastore_name,
+        :thin_provisioned => thin_provisioned,
+        :dependent        => dependent,
+        :persistent       => persistent,
+        :bootable         => bootable
       }
     )
   end
