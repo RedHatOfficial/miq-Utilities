@@ -113,16 +113,14 @@ begin
   
   disk_option_prefix = get_param(:dialog_disk_option_prefix)
   default_bootable   = get_param(:default_bootable)
-  
-  # ensure VM storage is detected so new VM disks can be added to same storage
-  if vm.storage.nil?
-    $evm.log(:info, "VM storage not detected yet, perform VM refresh and retry") if @DEBUG
-    vm.refresh
-    automate_retry(30, 'Wait for VM refresh to detect VM storage')  
-  else
-    $evm.log(:info, "vm.stroage => #{vm.storage.name}") if @DEBUG
-    $evm.root['ae_result'] = 'ok'
+ 
+  # determine the datastore name
+  if !vm.storage.nil?
+    datastore_name = vm.storage.name
+  elsif !miq_provision.nil?
+    datastore_name = miq_provision.options[:dest_storage][1]
   end
+  error("Could not determine destination datastore name") if datastore_name.nil?
   
   # collect new disk info
   new_disks = {}
@@ -132,6 +130,19 @@ begin
     disk_num  = captures[1]
     disk_attr = captures[2]
     
+    # ensure these attributes are converted to booleans
+    if (disk_attr == 'thin_provisioned' ||
+       disk_attr == 'dependent' ||
+       disk_attr == 'persistent' ||
+       disk_attr == 'bootable')
+      
+      # if value is a string, convert to a boolean
+      if disk_value.kind_of? String
+        $evm.log(:info, "Convert disk attribute '#{disk_attr}' value to boolean: #{disk_value}") if @DEBUG
+        disk_value = (disk_value =~ /t|true|y|yes/im) == 0
+      end
+    end
+    
     # set new disk attribute
     new_disks[disk_num]          ||= {}
     new_disks[disk_num][disk_attr] = disk_value
@@ -140,7 +151,7 @@ begin
   # create disks
   $evm.log(:info, "new_disks => #{new_disks}") if @DEBUG
   new_disks.each do |disk_num, disk_options|
-    $evm.log(:info, "{ disk_num => #{disk_num}, disk_options => #{disk_options} }") if @DEBUG
+    $evm.log(:info, "{ disk_num => #{disk_num}, disk_options => #{disk_options}, datastore => #{datastore_name} }") if @DEBUG
     
     size             = disk_options['size']             || 0
     thin_provisioned = disk_options['thin_provisioned'] || true
@@ -161,6 +172,7 @@ begin
       nil, # API want's this to be nil, why it asks for it is unknown....
       size_mb,
       {
+        :datastore       => datastore_name,
         :thinProvisioned => thin_provisioned,
         :dependent       => dependent,
         :persistent      => persistent,
