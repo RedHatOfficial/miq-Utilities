@@ -120,7 +120,6 @@ begin
   elsif !miq_provision.nil?
     datastore_name = miq_provision.options[:dest_storage][1]
   end
-  error("Could not determine destination datastore name") if datastore_name.nil?
   
   # collect new disk info
   new_disks = {}
@@ -165,19 +164,22 @@ begin
       next
     end
     
+    # create options has for vm.add_disk
+    options = {
+      :datastore        => datastore_name,
+      :thin_provisioned => thin_provisioned,
+      :dependent        => dependent,
+      :persistent       => persistent,
+      :bootable         => bootable
+    }
+    
     # add the aditional disk
-    $evm.log(:info, "Add new disk of size '#{size}'G to VM '#{vm.name}'") if @DEBUG
+    $evm.log(:info, "Add new disk of size '#{size}G' to VM #{vm.name} with options: #{options}")
     size_mb = size.to_i * 1024 # assume size is in gigabytes
     vm.add_disk(
       nil, # API want's this to be nil, why it asks for it is unknown....
       size_mb,
-      {
-        :datastore        => datastore_name,
-        :thin_provisioned => thin_provisioned,
-        :dependent        => dependent,
-        :persistent       => persistent,
-        :bootable         => bootable
-      }
+      options
     )
   end
 end
