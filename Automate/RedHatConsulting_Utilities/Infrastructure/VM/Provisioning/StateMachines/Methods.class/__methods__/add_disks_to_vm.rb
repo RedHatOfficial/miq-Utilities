@@ -101,7 +101,7 @@ begin
     when 'miq_provision'
       miq_provision = $evm.root['miq_provision']
       vm            = miq_provision.vm
-      options       = miq_provision.options
+      options       = miq_provision.options.merge(miq_provision.options[:ws_values]) #merge the ws_values and attributes into one list to make it easier to search
     when 'vm'
       vm      = get_param(:vm)
       options = $evm.root.attributes
@@ -110,9 +110,12 @@ begin
   end
   error("vm not found")      if vm.blank?
   error("options not found") if options.blank?
+  $evm.log(:info, "options => #{options}") if @DEBUG
   
   disk_option_prefix = get_param(:dialog_disk_option_prefix)
   default_bootable   = get_param(:default_bootable)
+  $evm.log(:info, "disk_option_prefix => #{disk_option_prefix}") if @DEBUG
+  $evm.log(:info, "default_bootable   => #{default_bootable}")   if @DEBUG
  
   # determine the datastore name
   if !vm.storage.nil?
@@ -120,6 +123,7 @@ begin
   elsif !miq_provision.nil?
     datastore_name = miq_provision.options[:dest_storage][1]
   end
+  $evm.log(:info, "datastore_name => #{datastore_name}") if @DEBUG
   
   # collect new disk info
   new_disks = {}
