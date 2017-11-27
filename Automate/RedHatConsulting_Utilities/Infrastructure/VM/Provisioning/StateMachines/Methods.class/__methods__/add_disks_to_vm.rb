@@ -101,7 +101,10 @@ begin
     when 'miq_provision'
       miq_provision = $evm.root['miq_provision']
       vm            = miq_provision.vm
-      options       = miq_provision.options.merge(miq_provision.options[:ws_values]) #merge the ws_values and attributes into one list to make it easier to search
+      options       = miq_provision.options
+    
+      #merge the ws_values and attributes into one list to make it easier to search
+      options       = options.merge(options[:ws_values]) if options[:ws_values]
     when 'vm'
       vm      = get_param(:vm)
       options = $evm.root.attributes
