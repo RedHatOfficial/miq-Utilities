@@ -40,7 +40,7 @@ def send_vm_provision_complete_email(vm, to, from, appliance)
   body += "<h1>VM</h1>"
   body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
   body += "<tr><td><b>Name</b></td><td><a href='https://#{appliance}/vm_or_template/show/#{vm.id}'>#{vm.name}</a></td></tr>"
-  body += "<tr><td>IPs</td><td>#{vm.ipaddresses.join(', ')}</td></tr>"
+  body += "<tr><td><b>IPs</b></td><td>#{vm.ipaddresses.join(', ')}</td></tr>"
   body += "<tr><td><b>Status</b></td><td>Provisioned</td></tr>"
   body += "</table>"
   body += "</br>"
