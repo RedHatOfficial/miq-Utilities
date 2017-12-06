@@ -1,0 +1,72 @@
+---
+object_type: method
+version: 1.0
+object:
+  attributes:
+    name: update_provision_status_with_email
+    display_name: 
+    description: 
+    scope: instance
+    language: ruby
+    location: inline
+  inputs:
+  - field:
+      aetype: 
+      name: status
+      display_name: 
+      datatype: string
+      priority: 1
+      owner: 
+      default_value: 
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: additional_to_email_addresses
+      display_name: 
+      datatype: array
+      priority: 2
+      owner: 
+      default_value: 
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: from_email_address
+      display_name: 
+      datatype: 
+      priority: 3
+      owner: 
+      default_value: 
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
