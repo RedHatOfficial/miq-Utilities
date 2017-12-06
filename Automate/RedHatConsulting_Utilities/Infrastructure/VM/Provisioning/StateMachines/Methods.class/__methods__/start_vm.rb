@@ -22,7 +22,7 @@ begin
   # Get provisioning object
   prov = $evm.root['miq_provision']
   error('Provisioning request not found') if prov.nil?
-  $evm.log(:info, "Provision:<#{prov.id}> Request:<#{prov.miq_provision_request.id}> Type:<#{prov.type}>")
+  $evm.log(:info, "Provision:<#{prov.id}> Request:<#{prov.miq_provision_request.id}> Type:<#{prov.type}>") if @DEBUG
   $evm.log(:info, "prov.attributes => {")                               if @DEBUG
   prov.attributes.sort.each { |k,v| $evm.log(:info, "\t#{k} => #{v}") } if @DEBUG
   $evm.log(:info, "}")                                                  if @DEBUG
