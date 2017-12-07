@@ -37,7 +37,7 @@ object:
       datatype: array
       priority: 2
       owner: 
-      default_value: 
+      default_value: "[]"
       substitute: false
       message: create
       visibility: 
@@ -57,7 +57,7 @@ object:
       datatype: 
       priority: 3
       owner: 
-      default_value: 
+      default_value: evmadmin@example.com
       substitute: false
       message: create
       visibility: 

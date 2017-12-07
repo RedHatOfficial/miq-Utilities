@@ -8,9 +8,7 @@
 #   * from_email_address
 #   * additional_to_email_addresses
 #
-@DEBUG = true
-
-DEFAULT_FROM_EMAIL_ADDRESS = 'evmadmin@example.com'
+@DEBUG = false
 
 # There are many ways to attempt to pass parameters in Automate.
 # This function checks all of them in priorty order as well as checking for symbol or string.
@@ -84,7 +82,6 @@ def send_vm_provision_email(prov, updated_message)
     
     # create from email address
     from = get_param(:from_email_address)
-    from ||= DEFAULT_FROM_EMAIL_ADDRESS
 
     # get appliance
     appliance   = $evm.object['appliance']
