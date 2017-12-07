@@ -133,10 +133,30 @@ object:
       max_time: 
   - field:
       aetype: method
-      name: redhat
+      name: placement_filters
       display_name: 
       datatype: string
       priority: 7
+      owner: 
+      default_value: 
+      substitute: true
+      message: "*"
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: method
+      name: redhat
+      display_name: 
+      datatype: string
+      priority: 8
       owner: 
       default_value: 
       substitute: true
@@ -156,7 +176,7 @@ object:
       name: vmware
       display_name: 
       datatype: string
-      priority: 8
+      priority: 9
       owner: 
       default_value: 
       substitute: true
@@ -176,7 +196,7 @@ object:
       name: microsoft
       display_name: 
       datatype: string
-      priority: 9
+      priority: 10
       owner: 
       default_value: 
       substitute: true
@@ -196,7 +216,7 @@ object:
       name: redhat_customize
       display_name: 
       datatype: string
-      priority: 10
+      priority: 11
       owner: 
       default_value: 
       substitute: true
@@ -216,7 +236,7 @@ object:
       name: vmware_customize
       display_name: 
       datatype: string
-      priority: 11
+      priority: 12
       owner: 
       default_value: 
       substitute: true
@@ -236,7 +256,7 @@ object:
       name: microsoft_customize
       display_name: 
       datatype: string
-      priority: 12
+      priority: 13
       owner: 
       default_value: 
       substitute: true

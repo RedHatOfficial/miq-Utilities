@@ -20,6 +20,42 @@ def error(msg)
   $evm.root['ae_reason'] = msg.to_s
   exit MIQ_STOP
 end
+
+# There are many ways to attempt to pass parameters in Automate.
+# This function checks all of them in priorty order as well as checking for symbol or string.
+#
+# Order:
+#   1. Inputs
+#   2. Current
+#   3. Object
+#   4. Root
+#   5. State
+#
+# @return Value for the given parameter or nil if none is found
+def get_param(param)
+  # check if inputs has been set for given param
+  param_value ||= $evm.inputs[param.to_sym]
+  param_value ||= $evm.inputs[param.to_s]
+
+  # else check if current has been set for given param
+  param_value ||= $evm.current[param.to_sym]
+  param_value ||= $evm.current[param.to_s]
+
+  # else cehck if current has been set for given param
+  param_value ||= $evm.object[param.to_sym]
+  param_value ||= $evm.object[param.to_s]
+
+  # else check if param on root has been set for given param
+  param_value ||= $evm.root[param.to_sym]
+  param_value ||= $evm.root[param.to_s]
+
+  # check if state has been set for given param
+  param_value ||= $evm.get_state_var(param.to_sym)
+  param_value ||= $evm.get_state_var(param.to_s)
+
+  $evm.log(:info, "{ '#{param}' => '#{param_value}' }") if @DEBUG
+  return param_value
+end
  
 begin
   # Get variables
@@ -30,14 +66,17 @@ begin
   error("User not specified") if user.nil?
   ems  = vm.ext_management_system
   error("EMS not found for VM:<#{vm.name}>") if ems.nil?
-  
-  tags  = {}
+  tags = get_param(:placement_filters)
+  $evm.log(:info,"Additional placement filters: "+tags.to_s) if @DEBUG
   
   # Get Tags that are in scope
   # Default is to look for Hosts and Datastores tagged with prov_scope = All or match to Group
+  # Will also look for any tags specified in the placement_filters hash
   normalized_ldap_group = user.normalized_ldap_group.gsub(/\W/,'_')
   tags["prov_scope"] = ["all", normalized_ldap_group]
   
+  $evm.log(:info, "Tags: "+tags.to_s)
+
   $evm.log("info", "VM=<#{vm.name}>, Space Required=<#{vm.provisioned_storage}>, group=<#{user.normalized_ldap_group}>")
   
   #############################

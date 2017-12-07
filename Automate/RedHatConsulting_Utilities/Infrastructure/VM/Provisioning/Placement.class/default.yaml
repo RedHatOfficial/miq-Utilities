@@ -8,6 +8,8 @@ object:
     inherits: 
     description: 
   fields:
+  - placement_filters:
+      value: placement_filters
   - redhat:
       value: redhat_best_placement_with_scope
   - vmware:
