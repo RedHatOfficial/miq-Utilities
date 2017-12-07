@@ -97,10 +97,10 @@ def send_vm_provision_email(prov, updated_message)
     
     # determine subject and status
     if $evm.root['ae_result'] == "error"
-      subject = "VM Provsion Errored - #{vm_name}"
+      subject = "VM Provision Errored - #{vm_name}"
       status  = "<span style='color: red'>#{$evm.root['ae_result']}</span>"
     else
-      subject = "VM Provsion Update - #{vm_name}"
+      subject = "VM Provision Update - #{vm_name}"
       status  = $evm.root['ae_result']
     end
       
