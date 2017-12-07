@@ -199,16 +199,20 @@ begin
   
   # get next disk off of queue
   $evm.log(:info, "new_disks_queue => #{new_disks_queue}") if @DEBUG
-  new_disk_num, new_disk_options = new_disks_queue.shift
+  unless new_disks_queue.empty?
+    new_disk_num, new_disk_options = new_disks_queue.shift
   
-  # add the aditional disk
-  $evm.log(:info, "Add new disk of size '#{new_disk_options['size']}G' to VM #{vm.name} with new_disk_options: #{new_disk_options}")
-  size_mb = new_disk_options['size'].to_i * 1024 # assume size is in gigabytes
-  vm.add_disk(
-    nil, # API want's this to be nil, why it asks for it is unknown....
-    size_mb,
+    # add the aditional disk
+    $evm.log(:info, "Add new disk of size '#{new_disk_options['size']}G' to VM #{vm.name} with new_disk_options: #{new_disk_options}")
+    size_mb = new_disk_options['size'].to_i * 1024 # assume size is in gigabytes
+    vm.add_disk(
+      nil, # API want's this to be nil, why it asks for it is unknown....
+      size_mb,
     new_disk_options
-  )
+    )
+  else
+    $evm.log(:info, "No disks left on queue #{new_disk_queue_name}") if @DEBUG
+  end
   
   # if the new disk queue is not empty then iterate again
   # else done adding new disks
