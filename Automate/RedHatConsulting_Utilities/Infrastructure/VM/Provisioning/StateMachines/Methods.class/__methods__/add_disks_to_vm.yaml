@@ -50,3 +50,103 @@ object:
       on_error: 
       max_retries: 
       max_time: 
+  - field:
+      aetype: 
+      name: default_persistent
+      display_name: 
+      datatype: boolean
+      priority: 3
+      owner: 
+      default_value: 'true'
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: default_dependent
+      display_name: 
+      datatype: boolean
+      priority: 4
+      owner: 
+      default_value: 'true'
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: default_thin_provisioned
+      display_name: 
+      datatype: boolean
+      priority: 5
+      owner: 
+      default_value: 'true'
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: default_size
+      display_name: 
+      datatype: integer
+      priority: 6
+      owner: 
+      default_value: '0'
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: retry_interval
+      display_name: 
+      datatype: integer
+      priority: 7
+      owner: 
+      default_value: '15'
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 

@@ -1,5 +1,10 @@
 # Adds disks to an existing VM.
 #
+# NOTE:
+#   Each disk is added one at a time in a retry loop.
+#   This is done because providers sometimes get overwelmed by
+#   to many add disk operations in a row so they need time to process each one.
+#
 # PARAMETERS
 #   dialog_disk_option_prefix - Prefix of disk dialog options.
 #                               Default is 'disk'
@@ -43,7 +48,7 @@
 #         'dialog_disk_3_bootable          => false
 #       }
 #
-@DEBUG = false
+@DEBUG = true
 
 # Perform a method retry for the given reason
 #
@@ -115,78 +120,111 @@ begin
   error("options not found") if options.blank?
   $evm.log(:info, "options => #{options}") if @DEBUG
   
+  # get dialog option prefix
   disk_option_prefix = get_param(:dialog_disk_option_prefix)
-  default_bootable   = get_param(:default_bootable)
   $evm.log(:info, "disk_option_prefix => #{disk_option_prefix}") if @DEBUG
-  $evm.log(:info, "default_bootable   => #{default_bootable}")   if @DEBUG
- 
-  # determine the datastore name
-  if !vm.storage.nil?
-    datastore_name = vm.storage.name
-  elsif !miq_provision.nil?
-    datastore_name = miq_provision.options[:dest_storage][1]
-  end
-  $evm.log(:info, "datastore_name => #{datastore_name}") if @DEBUG
   
-  # collect new disk info
-  new_disks = {}
-  options.select { |option, value| option.to_s =~ /^(dialog_)?#{disk_option_prefix}_([0-9]+)_/ }.each do |disk_option, disk_value|
-    # determine new disk attribute
-    captures  = disk_option.to_s.match(/#{disk_option_prefix}_([0-9]+)_(.*)/)
-    disk_num  = captures[1]
-    disk_attr = captures[2]
+  # new disk queue name
+  new_disk_queue_name = "#{disk_option_prefix}_new_disks_queue".to_sym
+  $evm.log(:info, "new_disk_queue_name => #{new_disk_queue_name}") if @DEBUG
+  
+  # if saved sate load from that
+  # else first iteration and need to create disk queue
+  new_disks_queue = nil
+  if $evm.state_var_exist?(new_disk_queue_name)
+    $evm.log(:info, "Loading saved state") if @DEBUG
     
-    # ensure these attributes are converted to booleans
-    if (disk_attr == 'thin_provisioned' ||
-       disk_attr == 'dependent' ||
-       disk_attr == 'persistent' ||
-       disk_attr == 'bootable')
+    new_disks_queue = $evm.get_state_var(new_disk_queue_name)
+  else
+    $evm.log(:info, "Create new disk queue") if @DEBUG
+    
+    # determine the datastore name
+    if !vm.storage.nil?
+      datastore_name = vm.storage.name
+    elsif !miq_provision.nil?
+      datastore_name = miq_provision.options[:dest_storage][1]
+    end
+    $evm.log(:info, "datastore_name => #{datastore_name}") if @DEBUG
+    
+    # get default options
+    default_size             = get_param(:default_size)
+    default_thin_provisioned = get_param(:default_thin_provisioned)
+    default_dependent        = get_param(:default_dependent)
+    default_persistent       = get_param(:default_persistent)
+    default_bootable         = get_param(:default_bootable)
+    $evm.log(:info, "default_size             => #{default_size}")             if @DEBUG
+    $evm.log(:info, "default_thin_provisioned => #{default_thin_provisioned}") if @DEBUG
+    $evm.log(:info, "default_dependent        => #{default_dependent}")        if @DEBUG
+    $evm.log(:info, "default_persistent       => #{default_persistent}")       if @DEBUG
+    $evm.log(:info, "default_bootable         => #{default_bootable}")         if @DEBUG
+  
+    # create the new disks queue
+    new_disks_queue = {}
+    options.select { |option, value| option.to_s =~ /^(dialog_)?#{disk_option_prefix}_([0-9]+)_/ }.each do |disk_option, disk_value|
+      # determine new disk attribute
+      captures  = disk_option.to_s.match(/#{disk_option_prefix}_([0-9]+)_(.*)/)
+      disk_num  = captures[1]
+      disk_attr = captures[2]
+    
+      # ensure these attributes are converted to booleans
+      if (disk_attr == 'thin_provisioned' ||
+         disk_attr == 'dependent' ||
+         disk_attr == 'persistent' ||
+         disk_attr == 'bootable')
       
-      # if value is a string, convert to a boolean
-      if disk_value.kind_of? String
-        $evm.log(:info, "Convert disk attribute '#{disk_attr}' value to boolean: #{disk_value}") if @DEBUG
-        disk_value = (disk_value =~ /t|true|y|yes/im) == 0
+        # if value is a string, convert to a boolean
+        if disk_value.kind_of? String
+          $evm.log(:info, "Convert disk attribute '#{disk_attr}' value to boolean: #{disk_value}") if @DEBUG
+          disk_value = (disk_value =~ /t|true|y|yes/im) == 0
+        end
       end
+    
+      # initialize new disk in queue using defaults
+      new_disks_queue[disk_num]          ||= {
+        'datastore_name'   => datastore_name,
+        'size'             => default_size,
+        'thin_provisioned' => default_thin_provisioned,
+        'dependent'        => default_dependent,
+        'persistent'       => default_persistent,
+        'bootable'         => default_bootable
+      }
+      
+      # set specific new disk attribute
+      new_disks_queue[disk_num][disk_attr] = disk_value
     end
     
-    # set new disk attribute
-    new_disks[disk_num]          ||= {}
-    new_disks[disk_num][disk_attr] = disk_value
+    # remove disks of 0 size from queue
+    new_disks_queue.delete_if { |new_disk_num, new_disk_options| new_disk_options['size'].nil? || new_disk_options['size'] == 0 }
   end
   
-  # create disks
-  $evm.log(:info, "new_disks => #{new_disks}") if @DEBUG
-  new_disks.each do |disk_num, disk_options|
-    $evm.log(:info, "{ disk_num => #{disk_num}, disk_options => #{disk_options}, datastore => #{datastore_name} }") if @DEBUG
+  # get next disk off of queue
+  $evm.log(:info, "new_disks_queue => #{new_disks_queue}") if @DEBUG
+  new_disk_num, new_disk_options = new_disks_queue.shift
+  
+  # add the aditional disk
+  $evm.log(:info, "Add new disk of size '#{new_disk_options['size']}G' to VM #{vm.name} with new_disk_options: #{new_disk_options}")
+  size_mb = new_disk_options['size'].to_i * 1024 # assume size is in gigabytes
+  vm.add_disk(
+    nil, # API want's this to be nil, why it asks for it is unknown....
+    size_mb,
+    new_disk_options
+  )
+  
+  # if the new disk queue is not empty then iterate again
+  # else done adding new disks
+  unless new_disks_queue.empty?
+    retry_interval = get_param(:retry_interval)
     
-    size             = disk_options['size']             || 0
-    thin_provisioned = disk_options['thin_provisioned'] || true
-    dependent        = disk_options['dependent']        || true
-    persistent       = disk_options['persistent']       || true
-    bootable         = disk_options['bootable']         || default_bootable
+    # set the state for the next loop
+    $evm.set_state_var(new_disk_queue_name, new_disks_queue)
+    $evm.log(:info, "Set state { new_disks_queue => #{new_disks_queue} }") if @DEBUG
     
-    # don't add disks with a size of 0
-    if disk_options['size'].nil? || disk_options['size'] == 0
-      $evm.log(:info, "Skip disk '#{disk_num}' with size of 0")
-      next
-    end
-    
-    # create options has for vm.add_disk
-    options = {
-      :datastore        => datastore_name,
-      :thin_provisioned => thin_provisioned,
-      :dependent        => dependent,
-      :persistent       => persistent,
-      :bootable         => bootable
-    }
-    
-    # add the aditional disk
-    $evm.log(:info, "Add new disk of size '#{size}G' to VM #{vm.name} with options: #{options}")
-    size_mb = size.to_i * 1024 # assume size is in gigabytes
-    vm.add_disk(
-      nil, # API want's this to be nil, why it asks for it is unknown....
-      size_mb,
-      options
-    )
+    # set retry
+    $evm.log(:info, "More new disks to be added, retry in #{retry_interval} seconds.")
+    $evm.root['ae_result']         = 'retry'
+    $evm.root['ae_retry_interval'] = "#{retry_interval}.seconds"
+  else
+    $evm.set_state_var(new_disk_queue_name, nil)
+    $evm.root['ae_result'] = 'ok'
   end
 end
