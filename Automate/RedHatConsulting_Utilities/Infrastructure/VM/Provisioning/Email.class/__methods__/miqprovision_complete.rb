@@ -3,6 +3,8 @@
 #
 @DEBUG = true
 
+PROVISIONING_TELEMETRY_PREFIX = "Telemetry: Provisioning:"
+
 # Log an error and exit.
 #
 # @param msg Message to error with
@@ -13,35 +15,48 @@ def error(msg)
   exit MIQ_STOP
 end
 
-# Sends an email about the service that was just provisioned:
+# Sends an email about the VM that was just provisioned:
 #
 # EXAMPLE:
 # -----------
-#  Service
+#  VM Info
 #
-#  Service	Email Test 3
-#  Request	10000000000373
-#  Status	Provisioned
+#  Name						test000.example.com
+#  IPS						10.0.0.2
+#  Status					Provisioned
 #
-#  VMs
+#  VM Provisioning Statistics 
 #
-#  VM Name	IP Address(es)
-#  cfme-self-service0005.rhc-lab.iad.redhat.com	10.15.69.128
-#  cfme-self-service0006.rhc-lab.iad.redhat.com	10.15.69.129
+#  CloudForms Provisioning Request ID			10000000000373
+#  Duration in Queue Before Provisioning Start	00:01:12
+#  Duration of Provisioning						00:23:14
 # -----------
-def send_vm_provision_complete_email(vm, to, from, appliance)
+def send_vm_provision_complete_email(prov, to, from, appliance)
   $evm.log('info', "START: send_vm_provision_complete_email") if @DEBUG
-
+  
+  # get the VM
+  vm = prov.vm
+  requested_created_on = prov.created_on
+  
   # Build subject
   subject = "VM Provision Completed - #{vm.name}"
   
   # build the body
   body = ""
-  body += "<h1>VM</h1>"
+  body += "<h1>VM Info</h1>"
   body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
   body += "<tr><td><b>Name</b></td><td><a href='https://#{appliance}/vm_or_template/show/#{vm.id}'>#{vm.name}</a></td></tr>"
   body += "<tr><td><b>IPs</b></td><td>#{vm.ipaddresses.join(', ')}</td></tr>"
   body += "<tr><td><b>Status</b></td><td>Provisioned</td></tr>"
+  body += "</table>"
+  body += "</br>"
+  
+  body += "<h1>VM Provisioning Statistics</h1>"
+  body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
+  body += "<tr><td><b>CloudForms Provisioning Request ID</b></td><td>#{prov.miq_provision_request.id}</td></tr>"
+  vm.custom_keys.each do |custom_key|
+    body += "<tr><td><b>#{custom_key}</b></td><td>#{vm.custom_get(custom_key)}</td></tr>" if custom_key =~ /#{PROVISIONING_TELEMETRY_PREFIX}/
+  end 
   body += "</table>"
   body += "</br>"
 
@@ -81,6 +96,6 @@ begin
   
   # send the email
   if !to.blank? && !from.blank?
-    send_vm_provision_complete_email(vm, to, from, appliance)
+    send_vm_provision_complete_email(prov, to, from, appliance)
   end
 end

@@ -1,14 +1,20 @@
+# Sends an email with an update about the given provisioning task
 #
-# Description: This method updates the provision status and sends an email with that update.
-#
-# Required inputs:
-#   * status
-#
-# Optional Parameters:
-#   * from_email_address
-#   * additional_to_email_addresses
+# PARAMETERS
+#   root
+#     miq_provision - Provisioning task to send the update about. 
 #
 @DEBUG = false
+
+# Log an error and exit.
+#
+# @param msg Message to error with
+def error(msg)
+  $evm.log(:error, msg)
+  $evm.root['ae_result'] = 'error'
+  $evm.root['ae_reason'] = msg.to_s
+  exit MIQ_STOP
+end
 
 # There are many ways to attempt to pass parameters in Automate.
 # This function checks all of them in priorty order as well as checking for symbol or string.
@@ -70,9 +76,10 @@ end
 
 # Sends an email with a provisioning update.
 #
-# @param prov            MiqProvision to send the update about
-# @param updated_message The provisioning update message
-def send_vm_provision_email(prov, updated_message)
+# @param prov                     MiqProvision to send the update about
+# @param updated_message          The provisioning update message
+# @param current_provision_result The current provision result
+def send_vm_provision_update_email(prov, updated_message, current_provision_result)
   vm = prov.vm
   
   to_email_addresses = determine_to_email_addresses(prov)
@@ -96,12 +103,13 @@ def send_vm_provision_email(prov, updated_message)
     end
     
     # determine subject and status
-    if $evm.root['ae_result'] == "error"
+    
+    if current_provision_result == "error"
       subject = "VM Provision Errored - #{vm_name}"
-      status  = "<span style='color: red'>#{$evm.root['ae_result']}</span>"
+      status  = "<span style='color: red'>#{current_provision_result}</span>"
     else
       subject = "VM Provision Update - #{vm_name}"
-      status  = $evm.root['ae_result']
+      status  = current_provision_result
     end
       
     # create body
@@ -128,35 +136,21 @@ def send_vm_provision_email(prov, updated_message)
 end
 
 begin
+  # get the provisioning task
   prov = $evm.root['miq_provision']
   $evm.log(:info, "Provision:<#{prov.id}> Request:<#{prov.miq_provision_request.id}> Type:<#{prov.type}>") if @DEBUG
   $evm.log(:info, "prov.attributes => {")                               if @DEBUG
   prov.attributes.sort.each { |k,v| $evm.log(:info, "\t#{k} => #{v}") } if @DEBUG
   $evm.log(:info, "}")                                                  if @DEBUG
-  unless prov
-    $evm.log(:error, "miq_provision object not provided")
-    exit(MIQ_STOP)
-  end
-  status = $evm.inputs['status']
-
-  # Update Status Message
-  updated_message  = "[#{$evm.root['miq_server'].name}] "
-  updated_message += "VM [#{prov.get_option(:vm_target_name)}] "
-  updated_message += "Step [#{$evm.root['ae_state']}] "
-  updated_message += "Status [#{status}] "
-  updated_message += "Message [#{prov.message}] "
-  updated_message += "Current Retry Number [#{$evm.root['ae_state_retries']}]" if $evm.root['ae_result'] == 'retry'
-  prov.miq_request.user_message = updated_message
-  prov.message = status
+  error("miq_provision object not provided") unless prov
   
-  # send email with updated status
-  send_vm_provision_email(prov, updated_message)
-
-  if $evm.root['ae_result'] == "error"
-    $evm.create_notification(:level   => "error", \
-                             :subject => prov.miq_request, \
-                             :message => "VM Provision Error: #{updated_message}")
-
-    $evm.log(:error, "VM Provision Error: #{updated_message}")
-  end
+  # get the VM provision update message
+  update_message   = get_param(:vm_provision_update_message)
+  update_message ||= prov.miq_request.user_message
+  
+  # get the current VM provision result
+  vm_current_provision_result = get_param(:vm_current_provision_result)
+  
+  # send the email
+  send_vm_provision_update_email(prov, update_message, vm_current_provision_result)
 end
