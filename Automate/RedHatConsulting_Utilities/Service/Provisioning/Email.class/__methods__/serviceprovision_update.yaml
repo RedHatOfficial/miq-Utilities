@@ -3,7 +3,7 @@ object_type: method
 version: 1.0
 object:
   attributes:
-    name: ServiceTemplateProvisionRequest_Approved
+    name: ServiceProvision_Update
     display_name: 
     description: 
     scope: instance

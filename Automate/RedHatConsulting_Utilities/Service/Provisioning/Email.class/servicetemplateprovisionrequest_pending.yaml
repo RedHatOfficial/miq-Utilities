@@ -9,4 +9,4 @@ object:
     description: 
   fields:
   - method1:
-      value: ServiceTemplateProvisionRequest_Pending
+      value: ServiceProvision_Update

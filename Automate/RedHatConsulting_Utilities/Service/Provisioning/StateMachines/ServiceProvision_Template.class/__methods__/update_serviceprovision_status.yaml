@@ -4,7 +4,7 @@ version: 1.0
 object:
   attributes:
     name: update_serviceprovision_status
-    display_name: 
+    display_name: Update Service Provision Status with Email Notification
     description: 
     scope: instance
     language: ruby
@@ -18,7 +18,27 @@ object:
       priority: 1
       owner: 
       default_value: 
-      substitute: true
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: email_only_on_error
+      display_name: 
+      datatype: boolean
+      priority: 2
+      owner: 
+      default_value: 'true'
+      substitute: false
       message: create
       visibility: 
       collect: 

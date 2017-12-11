@@ -4,9 +4,9 @@ version: 1.0
 object:
   attributes:
     display_name: 
-    name: ServiceProvision_Complete
+    name: ServiceProvision_Update
     inherits: 
-    description: ServiceProvision_Complete
+    description: 
   fields:
   - method1:
       value: ServiceProvision_Update
