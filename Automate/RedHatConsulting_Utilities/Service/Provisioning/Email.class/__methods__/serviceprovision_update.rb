@@ -5,7 +5,7 @@
 #
 @DEBUG = false
 
-DEFAULT_FROM_EMAIL_ADDRESS = 'cfme@example.com'
+PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
 
 # Log an error and exit.
 #
@@ -159,21 +159,25 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
   # Build subject
   $evm.log(:info, "{ $evm.object.name => #{$evm.object.name} } }") if @DEBUG
   subject = "Service Provision "
-  case $evm.object.name
-    when /ServiceProvision_Complete/i
-      subject += "Complete - "
-    when /ServiceProvision_Update/i
-      subject += "Update - #{state} #{status} - "
-    when /ServiceTemplateProvisionRequest_Approved/i
-      subject += "Approved - "
-    when /ServiceTemplateProvisionRequest_Denied/i
-      subject += "Denied - "
-    when /ServiceTemplateProvisionRequest_Pending/i
-      subject += "Pending - "
-    when /ServiceTemplateProvisionRequest_Warning/i
-      subject += "Warning - #{state} #{status} - "
-    else
-      subject += "Update - #{state} #{status} - "
+  if status =~ /error/i
+    subject += "Error - "
+  else
+    case $evm.object.name
+      when /ServiceProvision_Complete/i
+        subject += "Complete - "
+      when /ServiceProvision_Update/i
+        subject += "Update - #{state} #{status} - "
+      when /ServiceTemplateProvisionRequest_Approved/i
+        subject += "Approved - "
+      when /ServiceTemplateProvisionRequest_Denied/i
+        subject += "Denied - "
+      when /ServiceTemplateProvisionRequest_Pending/i
+        subject += "Pending - "
+      when /ServiceTemplateProvisionRequest_Warning/i
+        subject += "Warning - #{state} #{status} - "
+      else
+        subject += "Update - #{state} #{status} - "
+    end
   end
   subject += " #{service_name} (#{request.id})"
   
@@ -264,6 +268,19 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
   end
   body += "</table>"
   body += "<br />"
+  
+  # append telemetry data to email if any exists
+  unless service.nil?
+    service_telemetry_custom_keys = service.custom_keys.select { |custom_key| custom_key =~ /#{PROVISIONING_TELEMETRY_PREFIX}/ }
+    unless service_telemetry_custom_keys.empty?
+      body += "<h1>Service Provisioning Statistics</h1>"
+      body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
+      service_telemetry_custom_keys.each do |custom_key|
+        body += "<tr><td><b>#{custom_key}</b></td><td>#{service.custom_get(custom_key)}</td></tr>"
+      end 
+      body += "</table>"
+    end
+  end
 
   # Send email
   $evm.log("info", "Sending email to <#{to}> from <#{from}> subject: <#{subject}>") if @DEBUG

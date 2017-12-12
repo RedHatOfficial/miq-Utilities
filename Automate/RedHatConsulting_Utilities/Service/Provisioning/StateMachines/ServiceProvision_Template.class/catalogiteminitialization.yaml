@@ -1,0 +1,23 @@
+---
+object_type: instance
+version: 1.0
+object:
+  attributes:
+    display_name: 
+    name: CatalogItemInitialization
+    inherits: 
+    description: 
+  fields:
+  - sequencer:
+      value: "/Service/Provisioning/StateMachines/Methods/GroupSequenceCheck"
+  - pre1:
+      value: "/Service/Provisioning/StateMachines/Methods/DialogParser"
+  - pre2:
+      value: "/Service/Provisioning/StateMachines/Methods/CatalogItemInitialization"
+  - post5:
+      value: "/Service/Provisioning/StateMachines/Methods/ProcessTelemetryData"
+      on_entry: update_serviceprovision_status(status => 'Processing Telemetry Data')
+      on_exit: update_serviceprovision_status(status => 'Finished Processing Telemetry
+        Data')
+      on_error: update_serviceprovision_status(status => 'Error Processing Telemetry
+        Data')

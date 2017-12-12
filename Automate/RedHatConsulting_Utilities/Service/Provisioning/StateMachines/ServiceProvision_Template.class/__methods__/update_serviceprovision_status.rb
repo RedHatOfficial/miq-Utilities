@@ -16,7 +16,8 @@ module ManageIQ
           module ServiceProvision_Template
             class UpdateServiceProvisionStatus
               DEBUG = false
-              SERVICE_PROVISION_UPDATE_EMAIL_URI = 'Service/Provisioning/Email/ServiceProvision_Update'
+              SERVICE_PROVISION_UPDATE_EMAIL_URI              = 'Service/Provisioning/Email/ServiceProvision_Update'
+              SERVICE_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX = 'service_provisioning_telemetry'
               
               def initialize(handle = $evm)
                 @handle = handle
@@ -30,18 +31,22 @@ module ManageIQ
                   raise "service_template_provision_task object not provided"
                 end
 
-                updated_message = update_status_message(prov, @handle.inputs['status'])
+                # get the update message
+                update_message = update_status_message(prov, @handle.inputs['status'])
+                
+                # save telemetry
+                save_telemetry()
                 
                 # send email on error or if not send only on error
                 if @handle.root['ae_result'] == "error" || !@handle.inputs['email_only_on_error']
-                  send_service_provision_update_email(prov, updated_message)
+                  send_service_provision_update_email(prov, update_message)
                 end
 
                 if @handle.root['ae_result'] == "error"
                   @handle.create_notification(:level   => "error",
                                               :subject => prov.miq_request,
-                                              :message => "Service Provision Error: #{updated_message}")
-                  @handle.log(:error, "Service Provision Error: #{updated_message}")
+                                              :message => "Service Provision Error: #{update_message}")
+                  @handle.log(:error, "Service Provision Error: #{update_message}")
                 end
               end
 
@@ -67,7 +72,7 @@ module ManageIQ
               #
               # @return true if success sending email, false otherwise.
               def send_service_provision_update_email(prov, update_message)
-                @handle.log(:info, "send_service_provision_update_email: START: { prov => #{prov}, updated_message => #{updated_message} }") if DEBUG
+                @handle.log(:info, "send_service_provision_update_email: START: { prov => #{prov}, update_message => #{update_message} }") if DEBUG
 
                 # save current state of root
                 current_root_prov      = @handle.root['prov']
@@ -75,7 +80,6 @@ module ManageIQ
                 current_root_ae_result = @handle.root['ae_result']
                 current_root_ae_reason = @handle.root['ae_reason']
                 
-
                 begin
                   # instantiate the state machine to send a provision update email
                   @handle.root['ae_result']                        = nil
@@ -99,8 +103,31 @@ module ManageIQ
                   @handle.root['miq_request'] = current_miq_request
                 end
 
-                @handle.log(:info, "send_service_provision_update_email: END: { prov => #{prov}, updated_message => #{updated_message} }") if DEBUG
+                @handle.log(:info, "send_service_provision_update_email: END: { prov => #{prov}, update_message => #{update_message} }") if DEBUG
                 return success
+              end
+              
+              # Saves the current time as a state variable for processing later.
+              def save_telemetry()
+                state_var_name = nil;
+                step = $evm.root['ae_state']
+                case $evm.root['ae_status_state']
+                  when 'on_entry'
+                    state_var_name      = "#{SERVICE_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX}_on_entry_#{step}"
+                    telematry_overwrite = false
+                  when 'on_exit'
+                    state_var_name      = "#{SERVICE_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX}_on_exit_#{step}"
+                    telematry_overwrite = true
+                  when 'on_error'
+                    state_var_name      = "#{SERVICE_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX}_on_error_#{step}"
+                    telematry_overwrite = true
+                end
+                state_var_name = state_var_name.to_sym
+  
+                if telematry_overwrite || !$evm.state_var_exist?(state_var_name)
+                  $evm.set_state_var(state_var_name, Time.now)
+                  $evm.log(:info, "Save Telemetry as State Var: { #{state_var_name} => #{$evm.get_state_var(state_var_name)}, :miq_request_id => #{prov.miq_request.id} }") if @DEBUG
+                end
               end
             end
           end
