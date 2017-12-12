@@ -22,42 +22,6 @@ def error(msg)
   exit MIQ_STOP
 end
 
-# There are many ways to attempt to pass parameters in Automate.
-# This function checks all of them in priorty order as well as checking for symbol or string.
-#
-# Order:
-#   1. Inputs
-#   2. Current
-#   3. Object
-#   4. Root
-#   5. State
-#
-# @return Value for the given parameter or nil if none is found
-def get_param(param)  
-  # check if inputs has been set for given param
-  param_value ||= $evm.inputs[param.to_sym]
-  param_value ||= $evm.inputs[param.to_s]
-  
-  # else check if current has been set for given param
-  param_value ||= $evm.current[param.to_sym]
-  param_value ||= $evm.current[param.to_s]
- 
-  # else cehck if current has been set for given param
-  param_value ||= $evm.object[param.to_sym]
-  param_value ||= $evm.object[param.to_s]
-  
-  # else check if param on root has been set for given param
-  param_value ||= $evm.root[param.to_sym]
-  param_value ||= $evm.root[param.to_s]
-  
-  # check if state has been set for given param
-  param_value ||= $evm.get_state_var(param.to_sym)
-  param_value ||= $evm.get_state_var(param.to_s)
-
-  $evm.log(:info, "{ '#{param}' => '#{param_value}' }") if @DEBUG
-  return param_value
-end
-
 # Send an email about the status of the VM provisioning.
 #
 # @param prov            Provisioning task to send the update email about
@@ -143,7 +107,7 @@ begin
   end
   
   # send email on error or if not send only on error
-  if $evm.root['ae_result'] == "error" || !get_param(:email_only_on_error)
+  if $evm.root['ae_result'] == "error" || !$evm.inputs['email_only_on_error']
     send_vm_provision_update_email(prov, updated_message)
   end
     

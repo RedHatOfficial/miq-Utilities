@@ -9,4 +9,4 @@ object:
     description: 
   fields:
   - method1:
-      value: MiqProvisionRequest_Approved
+      value: MiqProvision_Update

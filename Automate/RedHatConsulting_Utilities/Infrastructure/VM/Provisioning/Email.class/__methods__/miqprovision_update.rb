@@ -1,10 +1,11 @@
-# Sends an email with an update about the given provisioning task
+# Sends an email with an update about the vm provisioning request.
 #
-# PARAMETERS
-#   root
-#     miq_provision - Provisioning task to send the update about. 
+# Designed to be called from any of the `Infrastructure/VM/Provisioning/Email`
+# instances to standerdize what email updates look like.
 #
 @DEBUG = false
+
+PROVISIONING_TELEMETRY_PREFIX = "Telemetry: Provisioning:"
 
 # Log an error and exit.
 #
@@ -52,105 +53,197 @@ def get_param(param)
   return param_value
 end
 
-# From a given MiqProvision and parameters in the environment determine the email addresses to send emails to.
+# Determine the CFME/ManageIQ hostname
 #
-# @param prov MiqProvision to send email about
-#
-# @return array of email addresses to send meail to
-def determine_to_email_addresses(prov)
-  owner_email = prov.options[:owner_email]
-  $evm.log(:warn, "Provision owner email is nil") if owner_email.nil?
-
-  # get additional to email addresses
-  additional_to_email_addresses = get_param(:additional_to_email_addresses)
-  $evm.log(:info, "additional_to_email_addresses => #{additional_to_email_addresses}") if @DEBUG
+# @return CFME/ManageIQ hostname
+def determine_cfme_hostname()
+  cfme_hostname   = get_param(:cfme_hostname)
+  cfme_hostname ||= $evm.object['appliance']
+  cfme_hostname ||= $evm.root['miq_server'].hostname
   
-  # determine to email addresses
+  $evm.log(:info, "cfme_hostname => #{cfme_hostname}") if @DEBUG
+  return cfme_hostname
+end
+
+# Determine the email address to send the email from
+#
+# @param cfme_hostname CFME/ManageIQ hostname the email is coming from
+#
+# @return email address to send the email from
+def determine_from_email_address(cfme_hostname)
+  from_email_address   = get_param(:from_email_address)
+  from_email_address ||= "cfme@#{cfme_hostname}"
+  
+  $evm.log(:info, "from_email_address => #{from_email_address}") if @DEBUG
+  return from_email_address
+end
+
+# Determin the email addresses to send the email to
+#
+# @param prov miq_provision to determine the to email addresses for
+#
+# @return array of email addresses to send the email to
+def determine_to_email_addresses(prov)
   to_email_addresses = []
-  to_email_addresses.push(owner_email)                unless owner_email.nil?
-  to_email_addresses += additional_to_email_addresses unless additional_to_email_addresses.nil?
+  
+  # get requester email
+  request         = prov.miq_request
+  requester       = request.requester
+  requester_email = requester.email
+  to_email_addresses.push(requester_email) unless requester_email.nil?
+  $evm.log(:info, "requester_email => #{requester_email}") if @DEBUG
+  
+  # get owner email
+  vm            = prov.vm
+  owner         = vm.owner    unless vm.nil?
+  owner_email   = owner.email unless owner.nil?
+  owner_email ||= request.options[:owner_email]
+  to_email_addresses.push(owner_email) unless owner_email.nil?
+  $evm.log(:info, "owner_email => #{owner_email}") if @DEBUG
+  
+  # get additional to addresses
+  additional_to_email_address = get_param(:to_email_address)
+  unless additional_to_email_address.nil?
+    additional_to_email_address = additional_to_email_address.split(/[;,\s]+/)
+    to_email_addresses += additional_to_email_address
+  end
+  
+  # clean up email address list
+  to_email_addresses = to_email_addresses.compact.uniq
   
   $evm.log(:info, "to_email_addresses => #{to_email_addresses}") if @DEBUG
   return to_email_addresses
 end
 
-# Sends an email with a provisioning update.
+# Sends an email about the VM that was just provisioned:
 #
-# @param prov                     MiqProvision to send the update about
-# @param updated_message          The provisioning update message
-# @param current_provision_result The current provision result
-def send_vm_provision_update_email(prov, updated_message, current_provision_result)
+# EXAMPLE:
+# -----------
+#
+#  VM
+#  |------------------------------------|-----------------------|
+#  | Name								| test000.example.com	|
+#  | IPS								| 10.0.0.2				|
+#  | Service							| My Service			| # OPTIONAL
+#  | State								| Provisioned			|
+#  | Status								| Ok					|
+#  | Step								| checkprovisioned		| # OPTIONAL
+#  | Message                            | Bla bal bal			|
+#  | CloudForms Provisioning Request ID	| 10000000000373		|
+#  |------------------------------------|-----------------------|
+#
+#  VM Provisioning Statistics 
+#  |----------------------------------------------------|---------------------------|
+#  | Telemetry: Provisioning: Duration: VM Provisioning	| 00:15:12					|
+#  | Telemetry: Provisioning: Duration: VM Clone		| 00:02:01					|
+#  | Telemetry: Provisioning: Time: Request Completed	| 2017-12-10 20:30:24 -0500 |
+#  | Telemetry: Provisioning: Time: Request Created		| 2017-12-10 20:13:28 -0500 |
+#  |----------------------------------------------------|---------------------------|
+#
+# -----------
+def send_vm_provision_complete_email(prov, to, from, update_message, cfme_hostname)
+  $evm.log('info', "START: send_vm_provision_complete_email") if @DEBUG
+  
+  state =  prov.state.capitalize
+  state = 'Cloned (Provisioned)' if state =~ /provisioned/i # Provisioned makes it seem like VM is done being provisioned, so attempt to make it more clear
+  status = prov.status.capitalize
+  
+  # get the VM
   vm = prov.vm
   
-  to_email_addresses = determine_to_email_addresses(prov)
-  if !to_email_addresses.empty?
-    # create to email address(es)
-    to = to_email_addresses.join(';')
-    
-    # create from email address
-    from = get_param(:from_email_address)
-
-    # get appliance
-    appliance   = $evm.object['appliance']
-    appliance ||= $evm.root['miq_server'].hostname
-    
-    # get vm name
-    vm_name = 'unknown'
-    if vm
-      vm_name = vm.name
-    elsif prov.options[:vm_target_name]
-      vm_name = prov.options[:vm_target_name]
-    end
-    
-    # determine subject and status
-    
-    if current_provision_result == "error"
-      subject = "VM Provision Errored - #{vm_name}"
-      status  = "<span style='color: red'>#{current_provision_result}</span>"
-    else
-      subject = "VM Provision Update - #{vm_name}"
-      status  = current_provision_result
-    end
-      
-    # create body
-    body = ""
-    body += "<h1>VM</h1>"
-    body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
-    if vm
-      body += "<tr><td><b>Name</b></td><td><a href='https://#{appliance}/vm_or_template/show/#{vm.id}'>#{vm_name}</a></td></tr>"
-    else
-      body += "<tr><td><b>Name</b></td><td>#{vm_name}</td></tr>"
-    end
-    body += "<tr><td><b>Request</b></td><td>#{prov.miq_request_id}</td></tr>"
-    body += "<tr><td><b>IPs</b></td><td>#{vm.ipaddresses.join(', ')}</td></tr>" unless vm.nil? || vm.ipaddresses.empty?
-    body += "<tr><td><b>Status</b></td><td>#{status}</td></tr>"
-    body += "<tr><td><b>Message</b></td><td>#{updated_message}</td></tr>"
-    body += "</table>"
-    body += "</br>"
+  # get vm name
+  vm_name   = vm.name unless vm.nil?
+  vm_name ||= prov.options[:vm_target_name] unless prov.options[:vm_target_name].nil?
+  vm_name ||= 'Unknown'
   
-    $evm.log("info", "Sending email to <#{to}> from <#{from}> subject: <#{subject}>")
-    $evm.execute('send_email', to, from, subject, body)
-  else
-    $evm.log(:warn, "No owner or additional to email addresses specified to send error email to. Skipping email.")
+  # Build subject
+  $evm.log(:info, "{ $evm.object.name => #{$evm.object.name} }") if @DEBUG
+  subject = "VM Provision "
+  case $evm.object.name
+    when /MiqProvision_Complete/i
+      subject += "Complete - "
+    when /MiqProvision_Update/i
+      subject += "Update - #{state} #{status} - "
+    when /MiqProvisionRequest_Approved/i
+      subject += "Approved - "
+    when /MiqProvisionRequest_Denied/i
+      subject += "Denied - "
+    when /MiqProvisionRequest_Pending/i
+      subject += "Pending - "
+    else
+      subject += "Update - #{state} #{status} - "
   end
+  subject += " #{vm_name} (#{prov.miq_provision_request.id})"
+  
+  # build the body
+  body = ""
+  body += "<h1>VM</h1>"
+  body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
+  unless vm.nil?
+    body += "<tr><td><b>Name</b></td><td><a href='https://#{cfme_hostname}/vm_or_template/show/#{vm.id}'>#{vm_name}</a></td></tr>"
+  else
+    body += "<tr><td><b>Name</b></td><td>#{vm_name}</td></tr>"
+  end
+  body += "<tr><td><b>IPs</b></td><td>#{vm.ipaddresses.join(', ')}</td></tr>"
+  body += "<tr><td><b>Service</b></td><td><a href='https://#{cfme_hostname}/service/explorer/s-#{vm.service.id}'>#{vm.service.name}</a></td></tr>" unless vm.service.nil?
+  body += "<tr><td><b>State</b></td><td>#{state}</td></tr>"
+  body += "<tr><td><b>Status</b></td><td>#{status}</td></tr>"
+  body += "<tr><td><b>Step</b></td><td>#{$evm.root['ae_state']}</td></tr>" unless $evm.root['ae_state'].nil?
+  body += "<tr><td><b>Message</b></td><td>#{update_message}</td></tr>"
+  body += "<tr><td><b>CloudForms Provisioning Request ID</b></td><td><a href='https://#{cfme_hostname}/miq_request/show/#{prov.miq_provision_request.id}'>#{prov.miq_provision_request.id}</a></td></tr>"
+  body += "</table>"
+  body += "<br />"
+  
+  # append telemetry data to email if any exists
+  vm_telemetry_custom_keys = vm.custom_keys.select { |custom_key| custom_key =~ /#{PROVISIONING_TELEMETRY_PREFIX}/ }
+  unless vm_telemetry_custom_keys.empty?
+    body += "<h1>VM Provisioning Statistics</h1>"
+    body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
+    vm_telemetry_custom_keys.each do |custom_key|
+      body += "<tr><td><b>#{custom_key}</b></td><td>#{vm.custom_get(custom_key)}</td></tr>"
+    end 
+    body += "</table>"
+  end
+
+  # Send email
+  $evm.log("info", "Sending email to <#{to}> from <#{from}> subject: <#{subject}>") if @DEBUG
+  $evm.log("info", "Sending email body: #{body}")                                   if @DEBUG
+  $evm.execute(:send_email, to, from, subject, body)
+  
+  $evm.log('info', "END: send_vm_provision_complete_email") if @DEBUG
 end
 
 begin
-  # get the provisioning task
+  # get the miq_provision task
   prov = $evm.root['miq_provision']
   $evm.log(:info, "Provision:<#{prov.id}> Request:<#{prov.miq_provision_request.id}> Type:<#{prov.type}>") if @DEBUG
   $evm.log(:info, "prov.attributes => {")                               if @DEBUG
   prov.attributes.sort.each { |k,v| $evm.log(:info, "\t#{k} => #{v}") } if @DEBUG
   $evm.log(:info, "}")                                                  if @DEBUG
   error("miq_provision object not provided") unless prov
+
+  # determine to email addresses
+  to_email_addresses = determine_to_email_addresses(prov)
+  to_email_addresses = to_email_addresses.join(';')
+
+  # determine the CFME/ManageIQ hostname
+  cfme_hostname = determine_cfme_hostname()
+  
+  # determine from email address
+  from_email_address = determine_from_email_address(cfme_hostname)
   
   # get the VM provision update message
   update_message   = get_param(:vm_provision_update_message)
-  update_message ||= prov.miq_request.user_message
-  
-  # get the current VM provision result
-  vm_current_provision_result = get_param(:vm_current_provision_result)
+  update_message ||= prov.miq_request.try(:user_message)
+  update_message ||= 'None'
   
   # send the email
-  send_vm_provision_update_email(prov, update_message, vm_current_provision_result)
+  unless to_email_addresses.blank?
+    send_vm_provision_complete_email(prov, to_email_addresses, from_email_address, update_message, cfme_hostname)
+  else
+    warn_message = "No one to send VM Provision Update email to. Request: #{request.id}"
+    $evm.log(:warn, warn_message)
+    $evm.create_notification(:level   => 'warning',
+                             :message => warn_message)
+  end
 end

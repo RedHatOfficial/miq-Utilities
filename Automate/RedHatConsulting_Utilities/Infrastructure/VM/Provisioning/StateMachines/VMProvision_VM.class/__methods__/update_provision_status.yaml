@@ -32,50 +32,10 @@ object:
       max_time: 
   - field:
       aetype: 
-      name: additional_to_email_addresses
-      display_name: 
-      datatype: array
-      priority: 2
-      owner: 
-      default_value: "[]"
-      substitute: false
-      message: create
-      visibility: 
-      collect: 
-      scope: 
-      description: 
-      condition: 
-      on_entry: 
-      on_exit: 
-      on_error: 
-      max_retries: 
-      max_time: 
-  - field:
-      aetype: 
-      name: from_email_address
-      display_name: 
-      datatype: 
-      priority: 3
-      owner: 
-      default_value: evmadmin@example.com
-      substitute: false
-      message: create
-      visibility: 
-      collect: 
-      scope: 
-      description: 
-      condition: 
-      on_entry: 
-      on_exit: 
-      on_error: 
-      max_retries: 
-      max_time: 
-  - field:
-      aetype: 
       name: email_only_on_error
       display_name: 
       datatype: boolean
-      priority: 4
+      priority: 2
       owner: 
       default_value: 'true'
       substitute: false
