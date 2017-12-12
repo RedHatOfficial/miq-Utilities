@@ -5,7 +5,7 @@
 #
 @DEBUG = false
 
-PROVISIONING_TELEMETRY_PREFIX = "Telemetry: Provisioning:"
+PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
 
 # Log an error and exit.
 #
@@ -141,12 +141,16 @@ end
 #  |----------------------------------------------------|---------------------------|
 #
 # -----------
-def send_vm_provision_complete_email(prov, to, from, update_message, cfme_hostname)
+def send_vm_provision_complete_email(prov, to, from, update_message, vm_current_provision_ae_result, cfme_hostname)
   $evm.log('info', "START: send_vm_provision_complete_email") if @DEBUG
   
   state =  prov.state.capitalize
   state = 'Cloned (Provisioned)' if state =~ /provisioned/i # Provisioned makes it seem like VM is done being provisioned, so attempt to make it more clear
-  status = prov.status.capitalize
+  
+  status   = vm_current_provision_ae_result # if the current ae_result of the VM provision is provided then use that as the status
+                                            # since in an error case the provsioning status would not have been updated yet
+  status ||= prov.status
+  status   = status.capitalize
   
   # get the VM
   vm = prov.vm
@@ -159,21 +163,32 @@ def send_vm_provision_complete_email(prov, to, from, update_message, cfme_hostna
   # Build subject
   $evm.log(:info, "{ $evm.object.name => #{$evm.object.name} }") if @DEBUG
   subject = "VM Provision "
-  case $evm.object.name
-    when /MiqProvision_Complete/i
-      subject += "Complete - "
-    when /MiqProvision_Update/i
-      subject += "Update - #{state} #{status} - "
-    when /MiqProvisionRequest_Approved/i
-      subject += "Approved - "
-    when /MiqProvisionRequest_Denied/i
-      subject += "Denied - "
-    when /MiqProvisionRequest_Pending/i
-      subject += "Pending - "
-    else
-      subject += "Update - #{state} #{status} - "
+  if status =~ /error/i
+    subject += "Error -"
+  else
+    case $evm.object.name
+      when /MiqProvision_Complete/i
+        subject += "Complete - "
+      when /MiqProvision_Update/i
+        subject += "Update - #{state} #{status} - "
+      when /MiqProvisionRequest_Approved/i
+        subject += "Approved - "
+      when /MiqProvisionRequest_Denied/i
+        subject += "Denied - "
+      when /MiqProvisionRequest_Pending/i
+        subject += "Pending - "
+      else
+        subject += "Update - #{state} #{status} - "
+    end
   end
   subject += " #{vm_name} (#{prov.miq_provision_request.id})"
+  
+  # determine status style
+  if status =~ /error/i
+    status_style = 'color: red'
+  else
+    status_style = ''
+  end
   
   # build the body
   body = ""
@@ -184,10 +199,10 @@ def send_vm_provision_complete_email(prov, to, from, update_message, cfme_hostna
   else
     body += "<tr><td><b>Name</b></td><td>#{vm_name}</td></tr>"
   end
-  body += "<tr><td><b>IPs</b></td><td>#{vm.ipaddresses.join(', ')}</td></tr>"
-  body += "<tr><td><b>Service</b></td><td><a href='https://#{cfme_hostname}/service/explorer/s-#{vm.service.id}'>#{vm.service.name}</a></td></tr>" unless vm.service.nil?
+  body += "<tr><td><b>IPs</b></td><td>#{vm.ipaddresses.join(', ') unless vm.nil?}</td></tr>"
+  body += "<tr><td><b>Service</b></td><td><a href='https://#{cfme_hostname}/service/explorer/s-#{vm.service.id}'>#{vm.service.name}</a></td></tr>" unless vm.nil? || vm.service.nil?
   body += "<tr><td><b>State</b></td><td>#{state}</td></tr>"
-  body += "<tr><td><b>Status</b></td><td>#{status}</td></tr>"
+  body += "<tr><td><b>Status</b></td><td><span style='#{status_style}'>#{status}</span></td></tr>"
   body += "<tr><td><b>Step</b></td><td>#{$evm.root['ae_state']}</td></tr>" unless $evm.root['ae_state'].nil?
   body += "<tr><td><b>Message</b></td><td>#{update_message}</td></tr>"
   body += "<tr><td><b>CloudForms Provisioning Request ID</b></td><td><a href='https://#{cfme_hostname}/miq_request/show/#{prov.miq_provision_request.id}'>#{prov.miq_provision_request.id}</a></td></tr>"
@@ -195,8 +210,8 @@ def send_vm_provision_complete_email(prov, to, from, update_message, cfme_hostna
   body += "<br />"
   
   # append telemetry data to email if any exists
-  vm_telemetry_custom_keys = vm.custom_keys.select { |custom_key| custom_key =~ /#{PROVISIONING_TELEMETRY_PREFIX}/ }
-  unless vm_telemetry_custom_keys.empty?
+  vm_telemetry_custom_keys = vm.custom_keys.select { |custom_key| custom_key =~ /#{PROVISIONING_TELEMETRY_PREFIX}/ } unless vm.nil?
+  unless vm_telemetry_custom_keys.nil? || vm_telemetry_custom_keys.empty?
     body += "<h1>VM Provisioning Statistics</h1>"
     body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
     vm_telemetry_custom_keys.each do |custom_key|
@@ -237,9 +252,12 @@ begin
   update_message ||= prov.miq_request.try(:user_message)
   update_message ||= 'None'
   
+  # get current VM provisioning status
+  vm_current_provision_ae_result = get_param(:vm_current_provision_ae_result)
+  
   # send the email
   unless to_email_addresses.blank?
-    send_vm_provision_complete_email(prov, to_email_addresses, from_email_address, update_message, cfme_hostname)
+    send_vm_provision_complete_email(prov, to_email_addresses, from_email_address, update_message, vm_current_provision_ae_result, cfme_hostname)
   else
     warn_message = "No one to send VM Provision Update email to. Request: #{request.id}"
     $evm.log(:warn, warn_message)

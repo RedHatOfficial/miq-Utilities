@@ -10,7 +10,8 @@
 #
 @DEBUG = false
 
-MIQ_PROVISION_UPDATE_EMAIL_URI = 'Infrastructure/VM/Provisioning/Email/MiqProvision_Update'
+VM_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX = 'vm_provisioning_telemetry'
+MIQ_PROVISION_UPDATE_EMAIL_URI             = 'Infrastructure/VM/Provisioning/Email/MiqProvision_Update'
 
 # Log an error and exit.
 #
@@ -38,11 +39,11 @@ def send_vm_provision_update_email(prov, updated_message)
   
   begin
     # instantiate the state machine to send a provision update email
-    $evm.root['ae_result']                   = nil
-    $evm.root['ae_reason']                   = nil
-    $evm.root['prov']                        = prov
-    $evm.root['vm_provision_update_message'] = updated_message
-    $evm.root['vm_current_provision_result'] = current_root_ae_result
+    $evm.root['ae_result']                      = nil
+    $evm.root['ae_reason']                      = nil
+    $evm.root['prov']                           = prov
+    $evm.root['vm_provision_update_message']    = updated_message
+    $evm.root['vm_current_provision_ae_result'] = current_root_ae_result
     $evm.instantiate(MIQ_PROVISION_UPDATE_EMAIL_URI)
     success = true
   ensure
@@ -61,6 +62,30 @@ def send_vm_provision_update_email(prov, updated_message)
   
   $evm.log(:info, "send_vm_provision_update_email: END: { prov => #{prov}, updated_message => #{updated_message} }") if @DEBUG
   return success
+end
+
+# Saves the current time as a state variable for processing later.
+#
+def save_telemetry()
+  state_var_name = nil;
+  step = $evm.root['ae_state']
+  case $evm.root['ae_status_state']
+    when 'on_entry'
+      state_var_name      = "#{VM_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX}_on_entry_#{step}"
+      telematry_overwrite = false
+    when 'on_exit'
+      state_var_name      = "#{VM_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX}_on_exit_#{step}"
+      telematry_overwrite = true
+    when 'on_error'
+      state_var_name      = "#{VM_PROVISIONING_TELEMETRY_STATE_VAR_PREFIX}_on_error_#{step}"
+      telematry_overwrite = true
+  end
+  state_var_name = state_var_name.to_sym
+  
+  if telematry_overwrite || !$evm.state_var_exist?(state_var_name)
+    $evm.set_state_var(state_var_name, Time.now)
+    $evm.log(:info, "Save Telemetry as State Var: { #{state_var_name} => #{$evm.get_state_var(state_var_name)}, :miq_request_id => #{prov.miq_request.id} }") if @DEBUG
+  end
 end
 
 begin
@@ -86,25 +111,7 @@ begin
   prov.message = status
   
   # save telemetry
-  state_var_name = nil;
-  step = $evm.root['ae_state']
-  case $evm.root['ae_status_state']
-    when 'on_entry'
-      state_var_name      = "telemetry_on_entry_#{step}"
-      telematry_overwrite = false
-    when 'on_exit'
-      state_var_name      = "telemetry_on_exit_#{step}"
-      telematry_overwrite = true
-    when 'on_error'
-      state_var_name      = "telemetry_on_error_#{step}"
-      telematry_overwrite = true
-  end
-  state_var_name = state_var_name.to_sym
-  
-  if telematry_overwrite || !$evm.state_var_exist?(state_var_name)
-    $evm.set_state_var(state_var_name, Time.now)
-    $evm.log(:info, "Save Telemetry as State Var: { #{state_var_name} => #{$evm.get_state_var(state_var_name)}, :miq_request_id => #{prov.miq_request.id} }") if @DEBUG
-  end
+  save_telemetry()
   
   # send email on error or if not send only on error
   if $evm.root['ae_result'] == "error" || !$evm.inputs['email_only_on_error']
