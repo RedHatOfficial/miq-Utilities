@@ -62,22 +62,18 @@ begin
   prov = $evm.root["miq_provision"]
   vm = prov.vm_template
   error("VM not specified") if vm.nil?
-  user = prov.miq_request.requester
-  error("User not specified") if user.nil?
   ems  = vm.ext_management_system
   error("EMS not found for VM:<#{vm.name}>") if ems.nil?
-  tags = get_param(:placement_filters)
-  $evm.log(:info,"Additional placement filters: "+tags.to_s) if @DEBUG
   
   # Get Tags that are in scope
   # Default is to look for Hosts and Datastores tagged with prov_scope = All or match to Group
-  # Will also look for any tags specified in the placement_filters hash
-  normalized_ldap_group = user.normalized_ldap_group.gsub(/\W/,'_')
-  tags["prov_scope"] = ["all", normalized_ldap_group]
+  # Will also look for any tags specified in placement_filters
+  tags = get_param(:placement_filters)
+  $evm.log(:info,"Additional placement filters: "+tags.to_s) if @DEBUG
   
   $evm.log(:info, "Tags: "+tags.to_s)
 
-  $evm.log("info", "VM=<#{vm.name}>, Space Required=<#{vm.provisioned_storage}>, group=<#{user.normalized_ldap_group}>")
+  $evm.log("info", "VM=<#{vm.name}>, Space Required=<#{vm.provisioned_storage}>, placement filters=<#{tags.to_s}>")
   
   #############################
   # STORAGE LIMITATIONS

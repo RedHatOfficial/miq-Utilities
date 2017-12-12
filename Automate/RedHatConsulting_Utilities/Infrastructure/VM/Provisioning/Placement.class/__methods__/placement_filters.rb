@@ -13,7 +13,13 @@
 # IMPLEMENTERS: Update with business logic
 # @return hash of tags to values
 def get_placement_filters
-  filters = {}
+  prov = $evm.root["miq_provision"]
+  user = prov.miq_request.requester
+  error("User not specified") if user.nil?
+  normalized_ldap_group = user.normalized_ldap_group.gsub(/\W/,'_')
+
+  #By default, look for either prov_scope all or equal to the requesting user's ldap group
+  filters = {"prov_scope"=>["all",normalized_ldap_group]}
   
   return filters
 end
