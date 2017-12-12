@@ -67,7 +67,7 @@ begin
   
   # Get Tags that are in scope
   # Default is to look for Hosts and Datastores tagged with prov_scope = All or match to Group
-  # Will also look for any tags specified in placement_filters
+  # This behavior can be overridden by modifying the hash returned in get_placement_filters
   tags = get_param(:placement_filters)
   $evm.log(:info,"Additional placement filters: "+tags.to_s) if @DEBUG
   
