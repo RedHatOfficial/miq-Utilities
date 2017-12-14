@@ -48,7 +48,7 @@
 #         'dialog_disk_3_bootable          => false
 #       }
 #
-@DEBUG = true
+@DEBUG = false
 
 # Perform a method retry for the given reason
 #
@@ -168,9 +168,9 @@ begin
     
       # ensure these attributes are converted to booleans
       if (disk_attr == 'thin_provisioned' ||
-         disk_attr == 'dependent' ||
-         disk_attr == 'persistent' ||
-         disk_attr == 'bootable')
+          disk_attr == 'dependent' ||
+          disk_attr == 'persistent' ||
+          disk_attr == 'bootable')
       
         # if value is a string, convert to a boolean
         if disk_value.kind_of? String
@@ -180,21 +180,21 @@ begin
       end
     
       # initialize new disk in queue using defaults
-      new_disks_queue[disk_num]          ||= {
-        'datastore_name'   => datastore_name,
-        'size'             => default_size,
-        'thin_provisioned' => default_thin_provisioned,
-        'dependent'        => default_dependent,
-        'persistent'       => default_persistent,
-        'bootable'         => default_bootable
+      new_disks_queue[disk_num] ||= {
+        :datastore_name   => datastore_name,
+        :size             => default_size,
+        :thin_provisioned => default_thin_provisioned,
+        :dependent        => default_dependent,
+        :persistent       => default_persistent,
+        :bootable         => default_bootable
       }
       
       # set specific new disk attribute
-      new_disks_queue[disk_num][disk_attr] = disk_value
+      new_disks_queue[disk_num][disk_attr.to_sym] = disk_value
     end
     
     # remove disks of 0 size from queue
-    new_disks_queue.delete_if { |new_disk_num, new_disk_options| new_disk_options['size'].nil? || new_disk_options['size'] == 0 }
+    new_disks_queue.delete_if { |new_disk_num, new_disk_options| new_disk_options[:size].nil? || new_disk_options[:size] == 0 }
   end
   
   # get next disk off of queue
@@ -203,12 +203,12 @@ begin
     new_disk_num, new_disk_options = new_disks_queue.shift
   
     # add the aditional disk
-    $evm.log(:info, "Add new disk of size '#{new_disk_options['size']}G' to VM #{vm.name} with new_disk_options: #{new_disk_options}")
-    size_mb = new_disk_options['size'].to_i * 1024 # assume size is in gigabytes
+    $evm.log(:info, "Add new disk of size '#{new_disk_options[:size]}G' to VM #{vm.name} with new_disk_options: #{new_disk_options}")
+    size_mb = new_disk_options[:size].to_i * 1024 # assume size is in gigabytes
     vm.add_disk(
       nil, # API want's this to be nil, why it asks for it is unknown....
       size_mb,
-    new_disk_options
+      new_disk_options
     )
   else
     $evm.log(:info, "No disks left on queue #{new_disk_queue_name}") if @DEBUG
