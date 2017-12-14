@@ -259,7 +259,7 @@ begin
   unless to_email_addresses.blank?
     send_vm_provision_complete_email(prov, to_email_addresses, from_email_address, update_message, vm_current_provision_ae_result, cfme_hostname)
   else
-    warn_message = "No one to send VM Provision Update email to. Request: #{request.id}"
+    warn_message = "No one to send VM Provision Update email to. Request: #{prov.miq_provision_request.id}"
     $evm.log(:warn, warn_message)
     $evm.create_notification(:level   => 'warning',
                              :message => warn_message)
