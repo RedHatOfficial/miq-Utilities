@@ -5,6 +5,10 @@
 #   This is done because providers sometimes get overwelmed by
 #   to many add disk operations in a row so they need time to process each one.
 #
+# TESTED WITH:
+#   VMware
+#   RHV
+#
 # PARAMETERS
 #   dialog_disk_option_prefix - Prefix of disk dialog options.
 #                               Default is 'disk'
@@ -48,7 +52,7 @@
 #         'dialog_disk_3_bootable          => false
 #       }
 #
-@DEBUG = false
+@DEBUG = true
 
 # Perform a method retry for the given reason
 #
@@ -140,11 +144,16 @@ begin
     
     # determine the datastore name
     if !vm.storage.nil?
-      datastore_name = vm.storage.name
+      datastore_name = vm.storage.name # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+      datastore      = vm.storage      # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
     elsif !miq_provision.nil?
-      datastore_name = miq_provision.options[:dest_storage][1]
+      datastore_name = miq_provision.options[:dest_storage][1] # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+      datastore      = miq_provision.options[:dest_storage][1] # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
     end
     $evm.log(:info, "datastore_name => #{datastore_name}") if @DEBUG
+    $evm.log(:info, "datastore      => #{datastore}")      if @DEBUG
+    error("datastore_name must not be nil") if datastore_name.nil? || datastore_name.empty?
+    error("datastore must not be nil")      if datastore.nil?
     
     # get default options
     default_size             = get_param(:default_size)
@@ -181,7 +190,8 @@ begin
     
       # initialize new disk in queue using defaults
       new_disks_queue[disk_num] ||= {
-        :datastore_name   => datastore_name,
+        :datastore        => datastore,      # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+        :datastore_name   => datastore_name, # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
         :size             => default_size,
         :thin_provisioned => default_thin_provisioned,
         :dependent        => default_dependent,
