@@ -145,7 +145,7 @@ begin
     # determine the datastore name
     if !vm.storage.nil?
       datastore_name = vm.storage.name # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
-      datastore      = vm.storage      # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+      datastore      = vm.storage.name # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
     elsif !miq_provision.nil?
       datastore_name = miq_provision.options[:dest_storage][1] # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
       datastore      = miq_provision.options[:dest_storage][1] # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
