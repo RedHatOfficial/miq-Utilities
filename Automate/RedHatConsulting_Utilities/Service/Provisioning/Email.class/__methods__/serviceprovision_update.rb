@@ -118,22 +118,22 @@ end
 #
 #  Service
 #  |------------------------------------|-------------------|
-#  | Service							| Email Test 3		|
-#  | State								| Finishd			|
-#  | Status								| Ok				|
-#  | Step								| checkprovisioned	| # OPTIONAL
-#  | Message                            | Bla bal bal		|
-#  | VM Reqeusts						| 1					|
-#  | Approval State						| Approved			|
-#  | Approver Notes						| Auto				|
-#  | CloudForms Provisioning Request ID	| 10000000000373	|
+#  | Service                            | Email Test 3      |
+#  | State                              | Finishd           |
+#  | Status                             | Ok                |
+#  | Step                               | checkprovisioned  | # OPTIONAL
+#  | Message                            | Bla bal bal       |
+#  | VM Reqeusts                        | 1                 |
+#  | Approval State                     | Approved          |
+#  | Approver Notes                     | Auto              |
+#  | CloudForms Provisioning Request ID	| 10000000000373    |
 #  |------------------------------------|-------------------|
 #  
 #  VMs
-#  | Name								| IP Address(es)	| State 		| Status	| Power	| CloudForms Provisioning Task ID   | Last Message	|
+#  | Name                               | IP Address(es)    | State         | Status    | Power | CloudForms Provisioning Task ID   | Last Message  |
 #  |------------------------------------|-------------------|---------------|-----------|-------|-----------------------------------|---------------|
-#  | cfme-self-service0005.example.com	| 10.15.69.128		| Provisioned	| Ok 		| on	| 10000000000111					| Bla Bla		|
-#  | cfme-self-service0006.eample.com	| 					| Error			| off		| 		| 10000000000112					| Foo Bar		|
+#  | cfme-self-service0005.example.com	| 10.15.69.128      | Provisioned   | Ok        | on    | 10000000000111                    | Bla Bla       |
+#  | cfme-self-service0006.eample.com	|                   | Error         | off       |       | 10000000000112                    | Foo Bar       |
 #  |------------------------------------|-------------------|---------------|-----------|-------|-----------------------------------|---------------|
 #
 # -----------
