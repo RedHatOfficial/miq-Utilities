@@ -325,9 +325,12 @@ begin
     prov.set_storage(storage)
   end
   
-  $evm.log("info", "vm=<#{vm.name}> host=<#{host}> storage=<#{storage}>")
-   
+  $evm.log("info", "vm=<#{vm.name}> cluster=<#{cluster}> host=<#{host}> storage=<#{storage}>")
+  
   if (cluster.nil? and host.nil?) or storage.nil?
-    error("Either {host,cluster} or storage is nil - issue abort.")
+    error("No DRS cluster tagged with the expected tags nor fall back option of host tagged with the expected tags could be found." +
+          " Or no stroage with sufficent space tagged attached to selected DRS cluster or host tagged with the expected tags could be found." +
+          " Ensure there is at least one DRS cluster or a host tagged with the expected tags and attached storage with sufficent space tagged with the correct tags." +
+          " { tags => #{tags} }")
   end
 end
