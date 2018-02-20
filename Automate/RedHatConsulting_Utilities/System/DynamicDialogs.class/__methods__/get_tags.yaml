@@ -37,7 +37,7 @@ object:
       datatype: boolean
       priority: 2
       owner: 
-      default_value: 'true'
+      default_value: 'false'
       substitute: false
       message: create
       visibility: 
@@ -57,7 +57,7 @@ object:
       datatype: boolean
       priority: 3
       owner: 
-      default_value: 'false'
+      default_value: 'true'
       substitute: false
       message: create
       visibility: 

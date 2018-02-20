@@ -1,7 +1,6 @@
 # Tags a given set of LANs associated with currently selected VMDB object with a given set of tags
 #
 # Parameters
-#   $evm.root['dialog_tag_category']
 #   $evm.root['dialog_multiselect_tags']
 #   $evm.root['dialog_single_value_tag']
 #
@@ -62,11 +61,9 @@ begin
   end
   
   # get the parameters
-  tag_category           = $evm.root['dialog_tag_category']
   multi_select_tag_names = $evm.root['dialog_multiselect_tags'] # could have selected multiple
   single_value_tag_name  = $evm.root['dialog_single_value_tag']  # could have selected one
   lan_names              = $evm.root['dialog_lan_names']
-  $evm.log(:info, "tag_category           => #{tag_category}")           if @DEBUG
   $evm.log(:info, "multi_select_tag_names => #{multi_select_tag_names}") if @DEBUG
   $evm.log(:info, "single_value_tag_name  => #{single_value_tag_name}")  if @DEBUG
   $evm.log(:info, "lan_names    => #{lan_names}")                        if @DEBUG
@@ -85,8 +82,8 @@ begin
   #       and this could be verified against the selected tag category. But being lazy and just makeing assumptions that
   #       is all already handled before we get here.
   new_tags = []
-  new_tags << "#{tag_category}/#{single_value_tag_name}" if !single_value_tag_name.blank?
-  multi_select_tag_names.each { |tag_name| new_tags << "#{tag_category}/#{tag_name}" }
+  new_tags << single_value_tag_name if !single_value_tag_name.blank?
+  multi_select_tag_names.each { |tag_name| new_tags << tag_name }
   $evm.log(:info, "new_tags => #{new_tags}") if @DEBUG
   
   # tag all the VLANs

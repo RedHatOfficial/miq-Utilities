@@ -27,7 +27,7 @@ def get_category_tags(category)
   classification = $evm.vmdb(:classification).find_by_name(category)
   tags = {}
   $evm.vmdb(:classification).where(:parent_id => classification.id).each do |tag|
-    tags[tag.name] = tag.description
+    tags["#{category}/#{tag.name}"] = tag.description
   end
   
   return tags

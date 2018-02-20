@@ -9,4 +9,4 @@ object:
     description: 
   fields:
   - execute:
-      value: get_tags(multiselect => 'true')
+      value: get_tags(multiselect => 'true', always_visible => 'false')

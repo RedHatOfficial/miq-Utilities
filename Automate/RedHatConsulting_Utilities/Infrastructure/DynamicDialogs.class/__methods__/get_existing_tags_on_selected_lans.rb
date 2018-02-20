@@ -8,7 +8,7 @@
 #   $evm.root['dialog_tag_category']
 #   $evm.root['dialog_lans']
 #
-@DEBUG = false
+@DEBUG = true
 
 def dump_object(object_string, object)
   $evm.log("info", "Listing #{object_string} Attributes:") 
