@@ -1,0 +1,32 @@
+---
+object_type: method
+version: 1.0
+object:
+  attributes:
+    name: get_lans
+    display_name: 
+    description: 
+    scope: instance
+    language: ruby
+    location: inline
+  inputs:
+  - field:
+      aetype: 
+      name: values_key
+      display_name: 
+      datatype: string
+      priority: 1
+      owner: 
+      default_value: id
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
