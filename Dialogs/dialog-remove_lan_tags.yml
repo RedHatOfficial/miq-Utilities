@@ -1,0 +1,250 @@
+---
+- description: Dialog for removing multiple tags from selected LANs
+  buttons: submit,cancel
+  label: Remove LAN Tags
+  blueprint_id: 
+  dialog_tabs:
+  - description: 
+    display: edit
+    label: Default
+    display_method: 
+    display_method_options: 
+    position: 0
+    dialog_groups:
+    - description: 
+      display: edit
+      label: LANs
+      display_method: 
+      display_method_options: 
+      position: 0
+      dialog_fields:
+      - name: lan_names
+        description: 
+        data_type: 
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: false
+        required_method: 
+        required_method_options: {}
+        default_value: 
+        values:
+        - - 
+          - "<None>"
+        values_method: 
+        values_method_options: {}
+        options:
+          :force_multi_value: true
+        label: LANs
+        position: 0
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: false
+        auto_refresh: 
+        trigger_auto_refresh: true
+        visible: true
+        type: DialogFieldDropDownList
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: Infrastructure
+          ae_class: DynamicDialogs
+          ae_instance: get_lans_by_name
+          ae_message: 
+          ae_attributes: {}
+    - description: 
+      display: edit
+      label: Remove Tags
+      display_method: 
+      display_method_options: 
+      position: 1
+      dialog_fields:
+      - name: tag_category
+        description: 
+        data_type: string
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: false
+        required_method: 
+        required_method_options: {}
+        default_value: 
+        values:
+        - - 
+          - 
+        - - location
+          - Location
+        - - folder_path_blue
+          - Parent Folder Path (VMs & Templates)
+        - - folder_path_yellow
+          - Parent Folder Path (Hosts & Clusters)
+        - - itewk_test_single
+          - iTewk Test Single
+        - - itewk_test_multi
+          - iTewk Test Multi
+        - - ldap_sync_successful
+          - LDAP Sync Successful
+        - - os
+          - Operating System
+        - - environment
+          - environment
+        - - lan_purpose
+          - LAN Purpose
+        values_method: 
+        values_method_options: {}
+        options:
+          :force_multi_value: false
+          :sort_by: :value
+          :sort_order: :ascending
+        label: Tag Category
+        position: 0
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: false
+        auto_refresh: 
+        trigger_auto_refresh: true
+        visible: true
+        type: DialogFieldDropDownList
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: System
+          ae_class: DynamicDialogs
+          ae_instance: get_tag_categories
+          ae_message: 
+          ae_attributes: {}
+      - name: multiselect_tags
+        description: 
+        data_type: 
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: false
+        required_method: 
+        required_method_options: {}
+        default_value: 
+        values:
+        - - 
+          - "<None>"
+        values_method: 
+        values_method_options: {}
+        options:
+          :force_multi_value: true
+        label: Tags
+        position: 1
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: false
+        auto_refresh: true
+        trigger_auto_refresh: false
+        visible: true
+        type: DialogFieldDropDownList
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: System
+          ae_class: DynamicDialogs
+          ae_instance: get_tags_multiselect_always_visible
+          ae_message: 
+          ae_attributes: {}
+    - description: 
+      display: edit
+      label: Existing Tags [READ ONLY]
+      display_method: 
+      display_method_options: 
+      position: 2
+      dialog_fields:
+      - name: shared_existing_tags
+        description: 
+        data_type: 
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: false
+        required_method: 
+        required_method_options: {}
+        default_value: ''
+        values: ''
+        values_method: 
+        values_method_options: {}
+        options:
+          :protected: false
+        label: Tags Shared by All Selected LANs
+        position: 0
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: true
+        auto_refresh: true
+        trigger_auto_refresh: 
+        visible: true
+        type: DialogFieldTextAreaBox
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: Infrastructure
+          ae_class: DynamicDialogs
+          ae_instance: get_existing_tags_on_selected_lans_shared_only
+          ae_message: 
+          ae_attributes: {}
+      - name: all_existing_tags
+        description: 
+        data_type: 
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: false
+        required_method: 
+        required_method_options: {}
+        default_value: ''
+        values: ''
+        values_method: 
+        values_method_options: {}
+        options:
+          :protected: false
+        label: All Tags for Selected LANs
+        position: 1
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: true
+        auto_refresh: true
+        trigger_auto_refresh: 
+        visible: true
+        type: DialogFieldTextAreaBox
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: Infrastructure
+          ae_class: DynamicDialogs
+          ae_instance: get_all_existing_tags_on_selected_lans
+          ae_message: 
+          ae_attributes: {}
