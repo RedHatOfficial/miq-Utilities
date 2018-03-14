@@ -4,6 +4,7 @@
 # instances to standerdize what email updates look like.
 #
 @DEBUG = false
+require 'cgi'
 
 PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
 
@@ -204,7 +205,7 @@ def send_vm_provision_update_email(prov, to, from, update_message, vm_current_pr
   body += "<tr><td><b>State</b></td><td>#{state}</td></tr>"
   body += "<tr><td><b>Status</b></td><td><span style='#{status_style}'>#{status}</span></td></tr>"
   body += "<tr><td><b>Step</b></td><td>#{$evm.root['ae_state']}</td></tr>" unless $evm.root['ae_state'].nil?
-  body += "<tr><td><b>Message</b></td><td>#{update_message}</td></tr>"
+  body += "<tr><td><b>Message</b></td><td>#{CGI::escapeHTML(update_message)}</td></tr>"
   body += "<tr><td><b>CloudForms Provisioning Request ID</b></td><td><a href='https://#{cfme_hostname}/miq_request/show/#{prov.miq_provision_request.id}'>#{prov.miq_provision_request.id}</a></td></tr>"
   body += "</table>"
   body += "<br />"

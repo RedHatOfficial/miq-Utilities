@@ -23,7 +23,7 @@ end
 #
 # @return Duration in HH:MM:SS between to times, or Unknown, if any time is nil
 def get_duration(start_time, end_time)
-  $evm.log(:info, "get_duration: START: { :start_time => #{start_time}, :end_time => #{:end_time} }") if @DEBUG
+  $evm.log(:info, "get_duration: START: { :start_time => #{start_time}, :end_time => #{end_time} }") if @DEBUG
   duration = 'Unknown'
   
   start_time = $evm.get_state_var(start_time) if start_time.class == Symbol
@@ -34,8 +34,8 @@ def get_duration(start_time, end_time)
   else
     duration = 'Unknown'
   end
-  
-  $evm.log(:info, "get_duration: END: { :duration => #{duration}, :start_time => #{start_time}, :end_time => #{:end_time} }") if @DEBUG
+
+  $evm.log(:info, "get_duration: END: { :duration => #{duration}, :start_time => #{start_time}, :end_time => #{end_time} }") if @DEBUG
   return duration
 end
 

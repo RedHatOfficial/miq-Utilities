@@ -4,6 +4,7 @@
 # instances to standerdize what email updates look like.
 #
 @DEBUG = false
+require 'cgi'
 
 PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
 
@@ -204,7 +205,7 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
   body += "<tr><td><b>State</b></td><td>#{state}</td></tr>"
   body += "<tr><td><b>Status</b></td><td><span style='#{status_style}'>#{status}</span></td></tr>"
   body += "<tr><td><b>Step</b></td><td>#{$evm.root['ae_state']}</td></tr>" unless $evm.root['ae_state'].nil?
-  body += "<tr><td><b>Message</b></td><td>#{update_message}</td></tr>"
+  body += "<tr><td><b>Message</b></td><td>#{CGI::escapeHTML(update_message)}</td></tr>"
   body += "<tr><td><b>VM Requests</b></td><td>#{vm_requests}</td></tr>"
   body += "<tr><td><b>Approval State</b></td><td>#{request.approval_state.capitalize}</td></tr>"
   body += "<tr><td><b>Approver Notes</b></td><td>#{request.reason}</td></tr>"
@@ -262,7 +263,7 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
     body += "<td>#{vm_task.id}</td>"
     
     # add last task message
-    body += "<td>#{vm_task.message}</td>"
+    body += "<td>#{CGI::escapeHTML(vm_task.message)}</td>"
     
     body += "</tr>"
   end
