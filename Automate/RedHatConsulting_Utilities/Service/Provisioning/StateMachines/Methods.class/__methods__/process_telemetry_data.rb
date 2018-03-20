@@ -60,9 +60,9 @@ begin
   duration_service_provisioning      = get_duration(:service_provisioning_telemetry_on_entry_sequencer, now)
   duration_initial_vms_provisioning  = get_duration(:service_provisioning_telemetry_on_entry_provision, :service_provisioning_telemetry_on_exit_checkprovisioned)
   
-  set_provisioning_telemetry_custom_attribute(service, 'Time: Request Created',                task.created_on.localtime
+  set_provisioning_telemetry_custom_attribute(service, 'Time: Request Created',                task.created_on.localtime)
   set_provisioning_telemetry_custom_attribute(service, 'Time: Request Completed',              now)
-  set_provisioning_telemetry_custom_attribute(service, 'Hour: Request Created',                task.created_on.localtime.hour
+  set_provisioning_telemetry_custom_attribute(service, 'Hour: Request Created',                task.created_on.localtime.hour)
   set_provisioning_telemetry_custom_attribute(service, 'Duration: Task Queue',                 duration_task_queue)
   set_provisioning_telemetry_custom_attribute(service, 'Duration: Total Service Provisioning', duration_service_provisioning)
   set_provisioning_telemetry_custom_attribute(service, 'Duration: Initial VMs Provisioning',   duration_initial_vms_provisioning)
