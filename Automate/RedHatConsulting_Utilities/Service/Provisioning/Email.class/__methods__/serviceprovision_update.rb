@@ -18,6 +18,12 @@ def error(msg)
   exit MIQ_STOP
 end
 
+def dump_object(object_string, object)
+  $evm.log("info", "Listing #{object_string} Attributes:") 
+  object.attributes.sort.each { |k, v| $evm.log("info", "\t#{k}: #{v}") }
+  $evm.log("info", "===========================================") 
+end
+
 # There are many ways to attempt to pass parameters in Automate.
 # This function checks all of them in priorty order as well as checking for symbol or string.
 #
@@ -139,9 +145,10 @@ end
 #
 # -----------
 def send_service_provision_update_email(request, to, from, update_message, cfme_hostname)
-  $evm.log(:info, "START: send_service_provision_update_email")              if @DEBUG
+  $evm.log(:info, "START: send_service_provision_update_email")                if @DEBUG
   $evm.log(:info, "request => #{request}")                                     if @DEBUG
   $evm.log(:info, "request.miq_request_tasks => #{request.miq_request_tasks}") if @DEBUG
+  dump_object("request", request)                                              if @DEBUG
 
   state  = request.state.capitalize
   state  = 'Active' if state =~ /provisioned/i	# Provisioned means that one or more VMs have provisioned,
@@ -213,7 +220,23 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
   body += "</table>"
   body += "<br />"
   
-  vm_tasks = request.miq_request_tasks.select { |task| task.request_type == 'template' }
+  # get child request tasks
+  request_tasks = request.miq_request_tasks
+  $evm.log(:info, "request_tasks => #{request_tasks}") if @DEBUG
+  
+  # check for any other provision request ids set on the parent task and get those child request tasks  
+  additional_vm_provision_request_ids   = service_task.get_option(:provision_request_ids) || {}
+  additional_vm_provision_request_ids   = additional_vm_provision_request_ids.values
+  additional_vm_provision_requests      = additional_vm_provision_request_ids.collect { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id) }
+  request_tasks                        += additional_vm_provision_requests.collect { |vm_provision_request| vm_provision_request.miq_request_tasks }.flatten
+  $evm.log(:info, "additional_vm_provision_request_ids => #{additional_vm_provision_request_ids}")   if @DEBUG
+  $evm.log(:info, "additional_vm_provision_requests    => #{additional_vm_provision_requests}")      if @DEBUG
+  $evm.log(:info, "updated request_tasks               => #{request_tasks}")              if @DEBUG
+  
+  # filter down to only the template request tasks
+  vm_tasks = request_tasks.select { |task| task.request_type == 'template' }
+  
+  # add vm information
   $evm.log(:info, "vm_tasks => #{vm_tasks}") if @DEBUG
   body += "<h1>VMs</h1>"
   body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"

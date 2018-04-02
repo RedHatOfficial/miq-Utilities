@@ -10,7 +10,7 @@
 OS_TAG_DIALOG_OPTION         = 'dialog_os_tag'
 LOCATION_TAGS_DIALOG_OPTION  = 'dialog_location_tags'
 
-PROVISIONING_LAN_TAG_CATEGORY = 'lan_purpose'
+PROVISIONING_LAN_TAG_CATEGORY = 'network_purpose'
 PROVISIONING_LAN_TAG_NAME     = 'provisioning'
 
 require 'yaml'
@@ -52,12 +52,24 @@ begin
   
   # get parameters
   os_tag         = $evm.root[OS_TAG_DIALOG_OPTION]
-  location_tags  = $evm.root[LOCATION_TAGS_DIALOG_OPTION]
+  location_tags  = $evm.root[LOCATION_TAGS_DIALOG_OPTION] || []
   $evm.log(:info, "os_tag        => #{os_tag}")        if @DEBUG
   $evm.log(:info, "location_tags => #{location_tags}") if @DEBUG
   
   invalid_selection = false
   value = []
+  
+  # invalid if expected provision lan tag category does not exist
+  if !$evm.execute('category_exists?', PROVISIONING_LAN_TAG_CATEGORY)
+    invalid_selection = true
+    value << "Expected provisioning LAN Tag Category <#{PROVISIONING_LAN_TAG_CATEGORY}> does not exist."
+  end
+    
+  # invalid if expected provision lan tag does not exist
+  if !$evm.execute('tag_exists?', PROVISIONING_LAN_TAG_CATEGORY, PROVISIONING_LAN_TAG_NAME)
+    invalid_selection = true
+    value << "Expected provisioning LAN Tag <#{PROVISIONING_LAN_TAG_NAME}> in Tag Category <#{PROVISIONING_LAN_TAG_CATEGORY}> does not exist."
+  end
   
   # invalid if no os template tag(s) selected
   if os_tag.blank?
@@ -82,6 +94,7 @@ begin
     
     if tagged_providers.empty?
       tag = $evm.vmdb(:classification).find_by_name(provider_tag_name)
+      $evm.log(:info, "provider_tag_name => '#{provider_tag_name}', tag => #{tag}") if @DEBUG
       invalid_selection = true
       value << "Could not find Provider with Tag <#{tag.parent.description}: #{tag.description}>"
     else
@@ -104,8 +117,9 @@ begin
           # invalid tagged provider if there is a single host without a provisioning tagged LAN
           select = !host_provisioning_lans.empty?
           if !select
-            tag     = $evm.vmdb(:classification).find_by_name("#{PROVISIONING_LAN_TAG_CATEGORY}/#{PROVISIONING_LAN_TAG_NAME}")
-            message = "Provider <#{tagged_provider.name}> invalid because Host <#{host.name}> does not have a LAN with Tag <#{tag.parent.description}: #{tag.description}>"
+            tag = $evm.vmdb(:classification).find_by_name("#{PROVISIONING_LAN_TAG_CATEGORY}/#{PROVISIONING_LAN_TAG_NAME}")
+            message = "Provider <#{tagged_provider.name}> invalid because Host <#{host.name}> does not have a LAN with " +
+                      "Tag <#{tag ? tag.parent.description : PROVISIONING_LAN_TAG_CATEGORY}: #{tag ? tag.description : PROVISIONING_LAN_TAG_NAME}>"
             $evm.log(:warn, message)
             host_messages << message
           end
@@ -134,7 +148,9 @@ begin
         invalid_selection = true
         provider_tag = $evm.vmdb(:classification).find_by_name(provider_tag_name)
         lan_tag      = $evm.vmdb(:classification).find_by_name("#{PROVISIONING_LAN_TAG_CATEGORY}/#{PROVISIONING_LAN_TAG_NAME}")
-        value << "Could not find Provider with Tag <#{provider_tag.parent.description}: #{provider_tag.description}> and with a LAN with Tag <#{lan_tag.parent.description}: #{lan_tag.description}> on all hosts on the tagged provider."
+        value << "Could not find Provider with Tag <#{provider_tag.parent.description}: #{provider_tag.description}> and with a " +
+                 "LAN with Tag <#{lan_tag ? lan_tag.parent.description : PROVISIONING_LAN_TAG_CATEGORY}: #{lan_tag ? lan_tag.description : PROVISIONING_LAN_TAG_NAME}>" +
+                 "on all hosts on the tagged provider."
         value.concat(host_messages)
       end
       

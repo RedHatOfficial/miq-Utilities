@@ -14,9 +14,11 @@ module ManageIQ
         module Provisioning
           module Naming
             class VmName
+              VM_PROVISIONING_CONFIG_URI = 'Infrastructure/VM/Provisioning/Configuration/default'
+              
               def initialize(handle = $evm)
                 @handle = handle
-                @DEBUG = false
+                @DEBUG  = false
               end
 
               def main
@@ -78,20 +80,39 @@ module ManageIQ
               end
               
               def suffix_counter_length()
-                return get_option(:vm_name_suffix_counter_length) || 3
+                return get_option(:vm_name_suffix_counter_length) || get_vm_provisioning_config()['vm_name_suffix_counter_length'] || 3
               end
               
               def get_option(option)
                 option_value =
-                  @handle.object[option.to_sym] ||
-                  @handle.object[option.to_s] ||
                   provision_object.get_option(option.to_sym) ||
                   provision_object.get_option(option.to_s) ||
                   (provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[option.to_sym]) ||
-                  (provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[option.to_s])
+                  (provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[option.to_s]) ||
+                  @handle.object[option.to_sym] ||
+                  @handle.object[option.to_s]
                 
-                @handle.log(:info, "{ option => '#{option}', value => '#{option_value}' }") if @DEBUG
+                if @DEBUG
+                  @handle.log(:info, "provision_object.get_option(option.to_sym)              => #{provision_object.get_option(option.to_sym)}")
+                  @handle.log(:info, "provision_object.get_option(option.to_s)                => #{provision_object.get_option(option.to_s)}")
+                  @handle.log(:info, "provision_object.get_option(:ws_values)[option.to_sym]) => #{provision_object.get_option(:ws_values)[option.to_sym]}") if !provision_object.get_option(:ws_values).nil?
+                  @handle.log(:info, "provision_object.get_option(:ws_values)[option.to_s])   => #{provision_object.get_option(:ws_values)[option.to_s]}")   if !provision_object.get_option(:ws_values).nil?
+                  @handle.log(:info, "@handle.object[option.to_sym]                           => #{@handle.object[option.to_sym]}")
+                  @handle.log(:info, "@handle.object[option.to_s]                             => #{@handle.object[option.to_s]}")
+                  @handle.log(:info, "{ option => '#{option}', value => '#{option_value}' }")
+                end
+          
                 return option_value
+              end
+              
+              # Get the vm provsining customization configuration.
+              #
+              # @return VM provisining configuration
+              def get_vm_provisioning_config()
+                provisioning_config = $evm.instantiate(VM_PROVISIONING_CONFIG_URI)
+                error("VM Provisioning Configuration not found") if provisioning_config.nil?
+  
+                return provisioning_config
               end
             end
           end

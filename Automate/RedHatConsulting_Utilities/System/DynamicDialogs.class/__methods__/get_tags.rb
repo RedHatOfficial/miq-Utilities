@@ -51,12 +51,14 @@ begin
     single_value   = classification.single_value
     multiselect    = $evm.inputs['multiselect']
     always_visible = $evm.inputs['always_visible']
+    sort_order     = $evm.inputs['sort_order']
     visible        = (single_value == !multiselect) || always_visible
     
-    $evm.log(:info, "single_value   => #{single_value}") if @DEBUG
-    $evm.log(:info, "multiselect    => #{multiselect}")  if @DEBUG
-    $evm.log(:info, "always_visible => #{always_visible}")  if @DEBUG
-    $evm.log(:info, "visibile       => #{visible}")      if @DEBUG
+    $evm.log(:info, "single_value   => #{single_value}")   if @DEBUG
+    $evm.log(:info, "multiselect    => #{multiselect}")    if @DEBUG
+    $evm.log(:info, "always_visible => #{always_visible}") if @DEBUG
+    $evm.log(:info, "visibile       => #{visible}")        if @DEBUG
+    $evm.log(:info, "sort_order     => #{sort_order}")     if @DEBUG
   
     # determine tags to display
     if !visible || tag_category.nil? || tag_category.length.zero?
@@ -72,7 +74,7 @@ begin
   # create dialog element
   dialog_field = $evm.object
   dialog_field["sort_by"]    = "value"
-  dialog_field["sort_order"] = "ascending"
+  dialog_field["sort_order"] = sort_order
   dialog_field["data_type"]  = "string"
   dialog_field["visible"]    = visible
   dialog_field["values"]     = tags

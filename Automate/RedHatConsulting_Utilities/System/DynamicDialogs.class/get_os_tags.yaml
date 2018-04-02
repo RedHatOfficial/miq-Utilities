@@ -10,4 +10,4 @@ object:
   fields:
   - execute:
       value: get_tags(tag_category => 'os', multiselect => 'false', always_visible
-        => 'true')
+        => 'true', sort_order => 'descending')
