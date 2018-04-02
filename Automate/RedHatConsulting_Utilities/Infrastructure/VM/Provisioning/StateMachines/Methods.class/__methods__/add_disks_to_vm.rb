@@ -52,7 +52,7 @@
 #         'dialog_disk_3_bootable          => false
 #       }
 #
-@DEBUG = true
+@DEBUG = false
 
 # Perform a method retry for the given reason
 #
@@ -146,9 +146,11 @@ begin
     if !vm.storage.nil?
       datastore_name = vm.storage.name # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
       datastore      = vm.storage.name # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
-    elsif !miq_provision.nil?
-      datastore_name = miq_provision.options[:dest_storage][1] # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
-      datastore      = miq_provision.options[:dest_storage][1] # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+    elsif !options[:dest_storage].blank?
+      datastore_name = options[:dest_storage][1] # NOTE: VMware expects datastore_name - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+      datastore      = options[:dest_storage][1] # NOTE: RHV expects datastore         - https://bugzilla.redhat.com/show_bug.cgi?id=1536525
+    else
+      error("One of <vm.storage, $evm.root['miq_provision'].options[:dest_storage], $evm.root['miq_provision'].options[:ws_values][:dest_storage]> must be specified") 
     end
     $evm.log(:info, "datastore_name => #{datastore_name}") if @DEBUG
     $evm.log(:info, "datastore      => #{datastore}")      if @DEBUG
