@@ -39,7 +39,7 @@ module ManageIQ
 
               def supplied_name
                 @supplied_name ||= begin
-                  vm_name = provision_object.get_option(:vm_name).to_s.strip
+                  vm_name = get_option(:vm_name).to_s.strip
                   vm_name unless vm_name == 'changeme'
                 end
               end
@@ -54,7 +54,7 @@ module ManageIQ
 
               # Returns the name prefix (preferences model over dialog) or nil
               def prefix
-                @handle.object['vm_prefix'] || provision_object.get_option(:vm_prefix).to_s.strip
+                get_option(:vm_prefix).to_s.strip
               end
 
               # Returns the first 3 characters of the "environment" tag (or nil)
@@ -67,19 +67,31 @@ module ManageIQ
               # or nil if provisioning only one
               # or nil if supplied name contains a . (DOT) which means the supplied name is already fully qualified
               def suffix(condensed)
-                "$n{#{suffix_counter_length}}" if (provision_object.get_option(:number_of_vms) > 1 && supplied_name !~ /\./) || !condensed
+                "$n{#{suffix_counter_length}}" if (get_option(:number_of_vms) > 1 && supplied_name !~ /\./) || !condensed
               end
               
               def domain_name()
-                domain_name = provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[:domain_name]
+                domain_name = get_option(:domain_name)
                 domain_name = ".#{domain_name}" if !domain_name.nil?
                 @handle.log(:info, "domain_name: \"#{domain_name}\"") if @DEBUG
                 return domain_name
               end
               
               def suffix_counter_length()
-                return provision_object.get_option(:ws_values).nil? || provision_object.get_option(:ws_values)[:vm_name_suffix_counter_length].nil? ?
-                  3 : provision_object.get_option(:ws_values)[:vm_name_suffix_counter_length]
+                return get_option(:vm_name_suffix_counter_length) || 3
+              end
+              
+              def get_option(option)
+                option_value =
+                  @handle.object[option.to_sym] ||
+                  @handle.object[option.to_s] ||
+                  provision_object.get_option(option.to_sym) ||
+                  provision_object.get_option(option.to_s) ||
+                  (provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[option.to_sym]) ||
+                  (provision_object.get_option(:ws_values).nil? ? nil : provision_object.get_option(:ws_values)[option.to_s])
+                
+                @handle.log(:info, "{ option => '#{option}', value => '#{option_value}' }") if @DEBUG
+                return option_value
               end
             end
           end
