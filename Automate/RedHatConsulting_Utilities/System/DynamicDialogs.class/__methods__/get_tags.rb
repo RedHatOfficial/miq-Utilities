@@ -52,6 +52,7 @@ begin
     multiselect    = $evm.inputs['multiselect']
     always_visible = $evm.inputs['always_visible']
     sort_order     = $evm.inputs['sort_order']
+    add_nil_option = $evm.inputs['add_nil_option']
     visible        = (single_value == !multiselect) || always_visible
     
     $evm.log(:info, "single_value   => #{single_value}")   if @DEBUG
@@ -65,6 +66,7 @@ begin
       tags = {}
     else
       tags = get_category_tags(tag_category)
+      tags[nil] = nil if add_nil_option
     end
   else
     visible = false

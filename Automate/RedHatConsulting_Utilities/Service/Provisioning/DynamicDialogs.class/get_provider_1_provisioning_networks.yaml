@@ -1,0 +1,13 @@
+---
+object_type: instance
+version: 1.0
+object:
+  attributes:
+    display_name: 
+    name: get_provider_1_provisioning_networks
+    inherits: 
+    description: 
+  fields:
+  - execute:
+      value: get_networks(network_purpose_tag_name => 'provisioning', destination_provider_index
+        => 1)
