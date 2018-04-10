@@ -37,33 +37,39 @@ end
 
 # Creates provision requests based on the givin parameters.
 #
-# @param task                     ServiceTemplateProvisionTask Task used to create the service that will own the VMs created by these provision request(s)
-# @param requester                User                         User requesting the new VMs
-# @param number_of_vms            Integer                      Number of VMs to provision
-# @param template_fields          Hash                         Hash describing the template to use.
-#                                                              Must contain :name and :guid fields.
-# @param dialog_options           Hash                         User set options via dialog
-# @param tags                     Hash                         Tags to set on the created VMs.
-#                                                              Default {}
-# @param custom_vm_fields         Hash                         Custom vm_fields to use when creating the provsion request(s)
-#                                                              Default {}
-# @param custom_additional_values Hash                         Custom additional_values (ws_values) to use when creating the provsion request(s)
-#                                                              Default {}
-# @param create_seperate_requests Hash                         True to create seperate requests for each VM.
-#                                                              False to create one request that will create all of the requested VM(s)
-#                                                              Default true
+# @param task                      ServiceTemplateProvisionTask Task used to create the service that will own the VMs created by these provision request(s)
+# @param requester                 User                         User requesting the new VMs
+# @param number_of_vms             Integer                      Number of VMs to provision
+# @param provisioning_network_name String                       
+# @param destination_network_name  String
+# @param template_fields           Hash                         Hash describing the template to use.
+#                                                               Must contain :name and :guid fields.
+# @param dialog_options            Hash                         User set options via dialog
+# @param tags                      Hash                         Tags to set on the created VMs.
+#                                                               Default {}
+# @param custom_vm_fields          Hash                         Custom vm_fields to use when creating the provsion request(s)
+#                                                               Default {}
+# @param custom_additional_values  Hash                         Custom additional_values (ws_values) to use when creating the provsion request(s)
+#                                                               Default {}
+# @param create_seperate_requests  Hash                         True to create seperate requests for each VM.
+#                                                               False to create one request that will create all of the requested VM(s)
+#                                                               Default true
 #
 # @return Array all of the created requests
-def create_provision_requests(task, requester, number_of_vms, template_fields, dialog_options,
+def create_provision_requests(task, requester, number_of_vms,
+                              provisioning_network_name, destination_network_name,
+                              template_fields, dialog_options,
                               tags = {}, custom_vm_fields = {}, custom_additional_values = {}, create_seperate_requests = true)
-  $evm.log(:info, "START: create_provision_requests")                        if @DEBUG
-  $evm.log(:info, "number_of_vms            => #{number_of_vms}")            if @DEBUG
-  $evm.log(:info, "template_fields          => #{template_fields}")          if @DEBUG
-  $evm.log(:info, "dialog_options           => #{dialog_options}")           if @DEBUG
-  $evm.log(:info, "tags                     => #{tags}")                     if @DEBUG
-  $evm.log(:info, "custom_additional_values => #{custom_additional_values}") if @DEBUG
-  $evm.log(:info, "custom_vm_fields         => #{custom_vm_fields}")         if @DEBUG
-  $evm.log(:info, "create_seperate_requests => #{create_seperate_requests}") if @DEBUG
+  $evm.log(:info, "START: create_provision_requests")                          if @DEBUG
+  $evm.log(:info, "number_of_vms             => #{number_of_vms}")             if @DEBUG
+  $evm.log(:info, "provisioning_network_name => #{provisioning_network_name}") if @DEBUG
+  $evm.log(:info, "destination_network_name  => #{destination_network_name}")  if @DEBUG
+  $evm.log(:info, "template_fields           => #{template_fields}")           if @DEBUG
+  $evm.log(:info, "dialog_options            => #{dialog_options}")            if @DEBUG
+  $evm.log(:info, "tags                      => #{tags}")                      if @DEBUG
+  $evm.log(:info, "custom_additional_values  => #{custom_additional_values}")  if @DEBUG
+  $evm.log(:info, "custom_vm_fields          => #{custom_vm_fields}")          if @DEBUG
+  $evm.log(:info, "create_seperate_requests  => #{create_seperate_requests}")  if @DEBUG
   
   # determine number of vms to create and
   # how many provisioning requests to create and
@@ -82,17 +88,15 @@ def create_provision_requests(task, requester, number_of_vms, template_fields, d
 
   # === START: vm_fields
   
-  # determine if the provisioning LAN is a distributed vswitch or not
-  $evm.log(:info, "template_fields[:provisioning_lan] => #{template_fields[:provisioning_lan]}") if @DEBUG
-  provisioning_lan_name = template_fields[:provisioning_lan]
-  provisioning_lan      = $evm.vmdb(:lan).find_by_name(provisioning_lan_name)
-  if !(provisioning_lan_name =~ /^dvs_/) && provisioning_lan && provisioning_lan.switch.shared
-    provisioning_lan_name = "dvs_#{provisioning_lan_name}"
+  # determine if the provisioning network is a distributed vswitch or not
+  provisioning_network = $evm.vmdb(:lan).find_by_name(provisioning_network_name)
+  if !(provisioning_network_name =~ /^dvs_/) && provisioning_network && provisioning_network.switch.shared
+    provisioning_network_name = "dvs_#{provisioning_network_name}"
   end
-  $evm.log(:info, "provisioning_lan_name => #{provisioning_lan_name}") if @DEBUG
+  $evm.log(:info, "provisioning_network_name => #{provisioning_network_name}") if @DEBUG
   
   vm_fields = {
-    :vlan => provisioning_lan_name
+    :vlan => provisioning_network_name
   }
   vm_fields.merge!(custom_vm_fields)
   vm_fields.merge!(dialog_options)
@@ -115,7 +119,8 @@ def create_provision_requests(task, requester, number_of_vms, template_fields, d
 
   # === START: additional_values (AKA: ws_values)
   additional_values = {
-    :service_id => task.destination.id
+    :service_id          => task.destination.id,
+    :destination_network => destination_network_name
   }
   additional_values.merge!(custom_additional_values)
   additional_values.merge!(dialog_options)
@@ -201,10 +206,15 @@ begin
     number_of_vms_for_this_template  = base_vms_per_template
     number_of_vms_for_this_template += 1 if index < number_of_vms % templates.length
     
+    provisioning_network = template_fields[:provisioning_lan]
+    destination_network  = dialog_options["provider_#{index}_destination_network".to_sym]
+    
     new_provision_requests |= create_provision_requests(
                                 task,
                                 user,
                                 number_of_vms_for_this_template,
+                                provisioning_network,
+                                destination_network,
                                 template_fields,
                                 dialog_options,
                                 dialog_tags,
