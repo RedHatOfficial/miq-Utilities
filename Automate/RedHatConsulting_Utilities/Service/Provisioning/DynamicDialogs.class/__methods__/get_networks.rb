@@ -3,13 +3,14 @@
 # Parameters
 #   dialog_templates           YAML list of selected destination templates including destination provider specified by :provider element
 #   destination_provider_index Index in the destination templates list for the provider this dialog is for
+#   network_purpose_tag_name   Name of the Network Purpose Tag Category Tag that the networks should be tagged with
 #
-@DEBUG = true
+@DEBUG = false
 
-ADDRESS_SPACE_TAG_CATEGORY    = 'network_address_space'
-TEMPLATES_DIALOG_OPTION       = 'dialog_templates'
-PROVISIONING_LAN_TAG_CATEGORY = 'network_purpose'
-DESTINATION_LAN_TAG_NAME      = 'destination'
+ADDRESS_SPACE_TAG_CATEGORY   = 'network_address_space'.freeze
+TEMPLATES_DIALOG_OPTION      = 'dialog_templates'.freeze
+NETWORK_PURPOSE_TAG_CATEGORY = 'network_purpose'.freeze
+DESTINATION_LAN_TAG_NAME     = 'destination'.freeze
 
 require 'yaml'
 
@@ -98,7 +99,7 @@ begin
     
     $evm.log(:info, "destination_templates      => #{destination_templates}")      if @DEBUG
     $evm.log(:info, "destination_provider_index => #{destination_provider_index}") if @DEBUG
-    $evm.log(:info, "network_purpose_tag_name   => #{network_purpose_tag_name}") if @DEBUG
+    $evm.log(:info, "network_purpose_tag_name   => #{network_purpose_tag_name}")   if @DEBUG
     
     # ensure there are more destination templates/providers then this destination network dialog is for
     visible_and_required &= destination_templates.length > destination_provider_index
@@ -119,7 +120,7 @@ begin
       # find all the host destination networks
       host_destination_lans = []
       host.lans.each do |lan|
-        host_destination_lans << lan if lan.tagged_with?(PROVISIONING_LAN_TAG_CATEGORY, network_purpose_tag_name)
+        host_destination_lans << lan if lan.tagged_with?(NETWORK_PURPOSE_TAG_CATEGORY, network_purpose_tag_name)
       end
 
       all_host_destination_networks << host_destination_lans.collect { |lan| lan.name }
@@ -149,14 +150,14 @@ begin
   # if should be visible but can't find destination networks, show error
   # else prompt the user what this dialog element is for
   if visible_and_required && selectable_networks.empty?
-    destination_tag            = $evm.vmdb(:classification).find_by_name("#{PROVISIONING_LAN_TAG_CATEGORY}/#{network_purpose_tag_name}")
+    destination_tag            = $evm.vmdb(:classification).find_by_name("#{NETWORK_PURPOSE_TAG_CATEGORY}/#{network_purpose_tag_name}")
     address_space_tag_category = $evm.vmdb(:classification).find_by_name(ADDRESS_SPACE_TAG_CATEGORY)
     
     selectable_networks[nil] = "ERROR: No Networks with " +
-      "Tag <#{destination_tag ? destination_tag.parent.description : PROVISIONING_LAN_TAG_CATEGORY}: #{destination_tag ? destination_tag.description : network_purpose_tag_name}> " +
+      "Tag <#{destination_tag ? destination_tag.parent.description : NETWORK_PURPOSE_TAG_CATEGORY}: #{destination_tag ? destination_tag.description : network_purpose_tag_name}> " +
       "and Tag Category <#{address_space_tag_category ? address_space_tag_category.description : ADDRESS_SPACE_TAG_CATEGORY}>" +
       " on Provider <#{destination_provider_name}>"
-  elsif visible_and_required
+  elsif visible_and_required && selectable_networks.length > 1
     selectable_networks[nil] = "--- Select <#{destination_provider_name}> Destination Network"
   end
   

@@ -247,18 +247,11 @@ begin
   else
     value = []
     selected_templates.each do |selected_template|
-      # NOTE: just choose the first valid provisioning Network and warn there was more then one valid selection
-      provisioning_lans = provisioning_lans_by_provider[selected_template.ext_management_system.name]
-      provisioning_lan  = provisioning_lans.first
-      $evm.log(:warn, "More then one valid provisioning Network available with Tag <#{}: #{}> " +
-                      " on Provider with Tag <#{}: #{}>") if provisioning_lans.length > 1
-      
       # add the provider options
       value << {
         :provider         => selected_template.ext_management_system.name,
         :name             => selected_template.name,
-        :guid             => selected_template.guid,
-        :provisioning_lan => provisioning_lan,
+        :guid             => selected_template.guid
       }
     end
     value = value.to_yaml
