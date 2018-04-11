@@ -123,6 +123,8 @@ def get_vm_and_options()
   # standerdize the option keys
   options = options.symbolize_keys()
   
+  $evm.log(:info, "vm      => #{vm}")      if @DEBUG
+  $evm.log(:info, "options => #{options}") if @DEBUG
   return vm,options
 end
 
@@ -132,7 +134,7 @@ begin
   error("vm parameter not found") if vm.blank?
   
   # check to see if there is an expected destination ip
-  expected_ip = options[:destination_ip]
+  expected_ip = options[:destination_ip] || get_param(:destination_ip)
   
   # ensure VM IP addresses are set
   if vm.ipaddresses.nil? || vm.ipaddresses.empty?
