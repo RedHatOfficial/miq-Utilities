@@ -5,7 +5,7 @@
 # @param destination_network
 # @param destination_ip
 # @param destination_network_gateway
-@DEBUG = true
+@DEBUG = false
 
 NETWORK_GATEWAY_TAG_CATEGORY = 'network_gateway'.freeze
 ADDRESS_SPACE_TAG_CATEGORY   = 'network_address_space'.freeze
