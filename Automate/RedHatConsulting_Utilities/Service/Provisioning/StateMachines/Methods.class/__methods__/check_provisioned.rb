@@ -27,9 +27,6 @@ if result == 'ok' || result == 'retry'
   if provision_request_ids.any? { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id).state != 'finished' }
     result = 'retry'
     $evm.log('info', "Child provision requests not finished. Setting restult <#{result}> for task: #{task.id} ")
-  else
-    result = 'ok'
-    $evm.log('info', "Child provision requests finished. Setting result <#{result}> for task: #{task.id} ")
   end
 end
 
