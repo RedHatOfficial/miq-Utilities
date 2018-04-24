@@ -9,6 +9,6 @@ object:
     description: 
   fields:
   - job_template_name:
-      value: Sandbox | Configure VM Network and IP
+      value: Configure VM Network and IP
   - GetJobParameters:
-      value: get_configure_vm_network_and_ip_parameters
+      value: "/AutomationManagement/AnsibleTower/Operations/Methods/get_configure_vm_network_and_ip_parameters"

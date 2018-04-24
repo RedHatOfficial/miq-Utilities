@@ -4,9 +4,9 @@ version: 1.0
 object:
   attributes:
     display_name: 
-    name: get_available_networks
+    name: ReleaseIPAddress
     inherits: 
     description: 
   fields:
   - execute:
-      value: get_available_networks
+      value: release_ip_address

@@ -1,0 +1,13 @@
+---
+object_type: instance
+version: 1.0
+object:
+  attributes:
+    display_name: 
+    name: AcquireIPAddress
+    inherits: 
+    description: 
+  fields:
+  - execute:
+      value: acquire_ip_address
+      collect: "/acquired_ip_address = acquired_ip_address"

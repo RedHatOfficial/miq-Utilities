@@ -1,23 +1,6 @@
-# Get the networks available to a given object.
-#
-# Suported Objects:
-#  * vm
+# Updates the status of the current operation.
 #
 @DEBUG = false
-
-ADDRESS_SPACE_TAG_CATEGORY   = 'network_address_space'.freeze
-NETWORK_PURPOSE_TAG_CATEGORY = 'network_purpose'.freeze
-DESTINATION_LAN_TAG_NAME     = 'destination'.freeze
-
-# Log an error and exit.
-#
-# @param msg Message to error with
-def error(msg)
-  $evm.log(:error, msg)
-  $evm.root['ae_result'] = 'error'
-  $evm.root['ae_reason'] = msg.to_s
-  exit MIQ_STOP
-end
 
 def dump_object(object_string, object)
   $evm.log("info", "Listing #{object_string} Attributes:") 
@@ -35,6 +18,22 @@ def dump_root
   $evm.log("info", "Listing Root Object Attributes:") 
   $evm.root.attributes.sort.each { |k, v| $evm.log("info", "\t#{k}: #{v}") }
   $evm.log("info", "===========================================") 
+end
+
+# Notify and log a message.
+#
+# @param level   Symbol             Level of the notification and log message
+# @param message String             Message to notify and log
+# @param subject ActiveRecord::Base Subject of the notification
+def notify(level, message, subject)
+  $evm.create_notification(:level => level, :message => message, :subject => subject)
+  log_level = case level
+    when :warning
+      :warn
+    else
+      level
+  end
+  $evm.log(log_level, message)
 end
 
 # Function for getting the current VM and associated options based on the vmdb_object_type.
@@ -63,8 +62,8 @@ def get_vm_and_options()
       options = options.merge(options[:ws_values]) if options[:ws_values]
       options = options.merge(options[:dialog])    if options[:dialog]
     when 'vm'
-      # get root objet & VM
-      $evm.log(:info, "Get VM from paramater and dialog attributes form $evm.root") if @DEBUG
+      # get root object & VM
+      $evm.log(:info, "Get VM from parameter and dialog attributes form $evm.root") if @DEBUG
       vm = get_param(:vm)
       dump_object('vm', vm) if @DEBUG
     
@@ -74,8 +73,8 @@ def get_vm_and_options()
       options = options.merge(options[:ws_values]) if options[:ws_values]
       options = options.merge(options[:dialog])    if options[:dialog]
     when 'automation_task'
-      # get root objet
-      $evm.log(:info, "Get VM from paramater and dialog attributes form $evm.root") if @DEBUG
+      # get root object
+      $evm.log(:info, "Get VM from parameter and dialog attributes form $evm.root") if @DEBUG
       automation_task = $evm.root['automation_task']
       dump_object('automation_task', automation_task) if @DEBUG
       
@@ -93,9 +92,11 @@ def get_vm_and_options()
       error("Can not handle vmdb_object_type: #{$evm.root['vmdb_object_type']}")
   end
   
-  # standerdize the option keys
+  # standardize the option keys
   options = options.symbolize_keys()
   
+  $evm.log(:info, "vm      => #{vm}")      if @DEBUG
+  $evm.log(:info, "options => #{options}") if @DEBUG
   return vm,options
 end
 
@@ -136,48 +137,28 @@ def get_param(param)
 end
 
 begin
+  dump_root()    if @DEBUG
+  dump_current() if @DEBUG
+  
+  # don't report status on retry
+  exit MIQ_OK if $evm.root['ae_result'] == 'retry'
+  
+  if $evm.root['ae_level'].blank?
+    case $evm.root['ae_result']
+      when 'error'
+        level = :error
+      else
+        level = :info
+    end
+  else
+    level = $evm.root['ae_level']
+  end
+  
   vm,options = get_vm_and_options()
-  network_purpose_tag_name = DESTINATION_LAN_TAG_NAME
   
-  # determine the destination networks shared by all hosts on the selected destination provider
-  all_host_destination_networks = []
-  destination_provider = vm.ext_management_system
-  $evm.log(:info, "destination_provider => #{destination_provider}")      if @DEBUG
-  destination_provider.hosts.each do |host|     
-    # find all the host destination networks
-    host_destination_lans = []
-    host.lans.each do |lan|
-      host_destination_lans << lan if lan.tagged_with?(NETWORK_PURPOSE_TAG_CATEGORY, network_purpose_tag_name)
-    end
-
-    all_host_destination_networks << host_destination_lans.collect { |lan| lan.name }
-  end
-  $evm.log(:info, "all_host_destination_networks => #{all_host_destination_networks}") if @DEBUG
-
-  # ensure there is a destination network that is tagged on all of the hosts on the provider 
-  # `inject(:&) does an `&` opertion on all elements of the array, thus doing an intersection
-  intersection_of_host_destination_lans = all_host_destination_networks.inject(:&)
-  $evm.log(:info, "intersection_of_host_destination_lans => #{intersection_of_host_destination_lans}") if @DEBUG
+  notify(level, "#{$evm.inputs['message']}: #{$evm.root['ae_reason']}", vm)
   
-  # determine the selecatable desintation networks shared by all hosts that are also tagged with a network address space
-  selectable_networks = {}
-  intersection_of_host_destination_lans.each do |network_name|
-    network = $evm.vmdb(:lan).find_by_name(network_name)
-    unless network.tags(ADDRESS_SPACE_TAG_CATEGORY).blank?
-      network_address_space_tag_name = network.tags(ADDRESS_SPACE_TAG_CATEGORY).first
-      network_address_space_tag      = $evm.vmdb(:classification).find_by_name("#{ADDRESS_SPACE_TAG_CATEGORY}/#{network_address_space_tag_name}")
-      selectable_networks[network_name] = "#{network_address_space_tag.description} (#{network_name}) (#{destination_provider.name})"
-    end
-  end
-  $evm.log(:info, "selectable_networks => #{selectable_networks}") if @DEBUG
-  
-  selectable_networks[nil] = "--- Select <#{destination_provider.name}> Destination Network"
-  
-  # create dialog element
-  dialog_field = $evm.object
-  dialog_field['data_type'] = "string"
-  dialog_field['visible']   = true
-  dialog_field['required']  = true
-  dialog_field['values']    = selectable_networks
-  $evm.log(:info, "dialog_field['values'] => #{dialog_field['values']}") if @DEBUG
+  # reset parameters
+  $evm.root['ae_level']  = nil
+  $evm.root['ae_reason'] = nil
 end

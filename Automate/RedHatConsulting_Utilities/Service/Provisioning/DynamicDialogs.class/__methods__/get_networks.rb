@@ -1,16 +1,12 @@
 # Determine the destination networks for a specific selected destination provider.
 #
-# Parameters
-#   dialog_templates           YAML list of selected destination templates including destination provider specified by :provider element
-#   destination_provider_index Index in the destination templates list for the provider this dialog is for
-#   network_purpose_tag_name   Name of the Network Purpose Tag Category Tag that the networks should be tagged with
+# @param dialog_templates           String YAML list of selected destination templates including destination provider specified by :provider element
+# @param destination_provider_index Int    Index in the destination templates list for the provider this dialog is for
+# @param network_purpose            String Network purpose
 #
 @DEBUG = false
 
-ADDRESS_SPACE_TAG_CATEGORY   = 'network_address_space'.freeze
-TEMPLATES_DIALOG_OPTION      = 'dialog_templates'.freeze
-NETWORK_PURPOSE_TAG_CATEGORY = 'network_purpose'.freeze
-DESTINATION_LAN_TAG_NAME     = 'destination'.freeze
+TEMPLATES_DIALOG_OPTION = 'dialog_templates'.freeze
 
 require 'yaml'
 
@@ -78,6 +74,30 @@ def get_param(param)
   return param_value
 end
 
+# Get the network configuration for a given network
+#
+# @param network_name Name of the network to get the configuraiton for
+# @return Hash Configuration information about the given network
+#                network_purpose
+#                network_address_space
+#                network_gateway
+#                network_nameservers
+#                network_ddi_provider
+@network_configurations         = {}
+@missing_network_configurations = {}
+NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
+def get_network_configuration(network_name)
+  if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
+    begin
+      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{network_name}")
+    rescue => e
+      @missing_network_configurations[network_name] = "WARN: No network configuration exists"
+      $evm.log(:warn, "No network configuration for Network <#{network_name}> exists")
+    end
+  end
+  return @network_configurations[network_name]
+end
+
 begin
   dump_root()    if @DEBUG
   dump_current() if @DEBUG
@@ -95,11 +115,11 @@ begin
   if visible_and_required
     destination_templates      = YAML.load(destination_templates_yaml)
     destination_provider_index = get_param(:destination_provider_index)
-    network_purpose_tag_name   = get_param(:network_purpose_tag_name)
+    network_purpose            = get_param(:network_purpose)
     
     $evm.log(:info, "destination_templates      => #{destination_templates}")      if @DEBUG
     $evm.log(:info, "destination_provider_index => #{destination_provider_index}") if @DEBUG
-    $evm.log(:info, "network_purpose_tag_name   => #{network_purpose_tag_name}")   if @DEBUG
+    $evm.log(:info, "network_purpose            => #{network_purpose}")            if @DEBUG
     
     # ensure there are more destination templates/providers then this destination network dialog is for
     visible_and_required &= destination_templates.length > destination_provider_index
@@ -116,47 +136,40 @@ begin
     $evm.log(:info, "destination_provider      => #{destination_provider}")      if @DEBUG
 
     destination_provider.hosts.each do |host|
-          
       # find all the host destination networks
       host_destination_lans = []
       host.lans.each do |lan|
-        host_destination_lans << lan if lan.tagged_with?(NETWORK_PURPOSE_TAG_CATEGORY, network_purpose_tag_name)
+        network_configuraiton = get_network_configuration(lan.name)
+        $evm.log(:info, "network_configuraiton['network_purpose'] => #{network_configuraiton.blank? ? nil : network_configuraiton['network_purpose']}") if @DEBUG
+        host_destination_lans << lan if !network_configuraiton.blank? && (network_configuraiton['network_purpose'].include?(network_purpose))
       end
 
       all_host_destination_networks << host_destination_lans.collect { |lan| lan.name }
     end
     $evm.log(:info, "all_host_destination_networks => #{all_host_destination_networks}") if @DEBUG
 
-    # ensure there is a destination network that is tagged on all of the hosts on the provider 
     # `inject(:&) does an `&` opertion on all elements of the array, thus doing an intersection
     intersection_of_host_destination_lans = all_host_destination_networks.inject(:&)
     $evm.log(:info, "intersection_of_host_destination_lans => #{intersection_of_host_destination_lans}") if @DEBUG
   end
   
-  # determine the selecatable desintation networks shared by all hosts that are also tagged with a network address space
+  # determine the selecatable networks shared by all hosts that are also have network configuration with a network address space
   selectable_networks = {}
   if visible_and_required
     intersection_of_host_destination_lans.each do |network_name|
-      network = $evm.vmdb(:lan).find_by_name(network_name)
-      unless network.tags(ADDRESS_SPACE_TAG_CATEGORY).blank?
-        network_address_space_tag_name = network.tags(ADDRESS_SPACE_TAG_CATEGORY).first
-        network_address_space_tag      = $evm.vmdb(:classification).find_by_name("#{ADDRESS_SPACE_TAG_CATEGORY}/#{network_address_space_tag_name}")
-        selectable_networks[network_name] = "#{network_address_space_tag.description} (#{network_name}) (#{destination_provider_name})"
+      network               = $evm.vmdb(:lan).find_by_name(network_name)
+      network_configuration = get_network_configuration(network.name)
+      if !network_configuration['network_address_space'].blank?
+        selectable_networks[network_name] = "#{network_configuration['network_address_space']} (#{network_name}) (#{destination_provider_name})"
       end
     end
     $evm.log(:info, "selectable_networks => #{selectable_networks}") if @DEBUG
   end
   
-  # if should be visible but can't find destination networks, show error
+  # if should be visible but can't find network configurations, show error
   # else prompt the user what this dialog element is for
   if visible_and_required && selectable_networks.empty?
-    destination_tag            = $evm.vmdb(:classification).find_by_name("#{NETWORK_PURPOSE_TAG_CATEGORY}/#{network_purpose_tag_name}")
-    address_space_tag_category = $evm.vmdb(:classification).find_by_name(ADDRESS_SPACE_TAG_CATEGORY)
-    
-    selectable_networks[nil] = "ERROR: No Networks with " +
-      "Tag <#{destination_tag ? destination_tag.parent.description : NETWORK_PURPOSE_TAG_CATEGORY}: #{destination_tag ? destination_tag.description : network_purpose_tag_name}> " +
-      "and Tag Category <#{address_space_tag_category ? address_space_tag_category.description : ADDRESS_SPACE_TAG_CATEGORY}>" +
-      " on Provider <#{destination_provider_name}>"
+    selectable_networks[nil] = "ERROR: No Networks on Provider <#{destination_provider_name}> with configuration instances in <#{NETWORK_CONFIGURATION_URI}>."
   elsif visible_and_required && selectable_networks.length > 1
     selectable_networks[nil] = "--- Select <#{destination_provider_name}> Destination Network"
   end

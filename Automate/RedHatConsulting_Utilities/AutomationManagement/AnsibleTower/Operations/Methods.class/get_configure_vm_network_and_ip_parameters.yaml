@@ -4,9 +4,9 @@ version: 1.0
 object:
   attributes:
     display_name: 
-    name: MigrateVMNetwork
+    name: get_configure_vm_network_and_ip_parameters
     inherits: 
     description: 
   fields:
-  - rel1:
-      value: "/Infrastructure/Network/StateMachines/MigrateVMNetwork/default"
+  - execute:
+      value: get_configure_vm_network_and_ip_parameters

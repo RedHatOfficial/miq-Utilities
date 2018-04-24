@@ -3,7 +3,7 @@ object_type: method
 version: 1.0
 object:
   attributes:
-    name: get_networks
+    name: update_status
     display_name: 
     description: 
     scope: instance
@@ -12,30 +12,10 @@ object:
   inputs:
   - field:
       aetype: 
-      name: destination_provider_index
-      display_name: 
-      datatype: integer
-      priority: 1
-      owner: 
-      default_value: '0'
-      substitute: false
-      message: create
-      visibility: 
-      collect: 
-      scope: 
-      description: 
-      condition: 
-      on_entry: 
-      on_exit: 
-      on_error: 
-      max_retries: 
-      max_time: 
-  - field:
-      aetype: 
-      name: network_purpose
+      name: message
       display_name: 
       datatype: 
-      priority: 2
+      priority: 1
       owner: 
       default_value: 
       substitute: false

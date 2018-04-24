@@ -4,11 +4,8 @@
 #
 # @param destination_network
 # @param destination_ip
-# @param destination_network_gateway
+#
 @DEBUG = false
-
-NETWORK_GATEWAY_TAG_CATEGORY = 'network_gateway'.freeze
-ADDRESS_SPACE_TAG_CATEGORY   = 'network_address_space'.freeze
 
 # Log an error and exit.
 #
@@ -138,6 +135,30 @@ def get_param(param)
   return param_value
 end
 
+# Get the network configuration for a given network
+#
+# @param network_name Name of the network to get the configuraiton for
+# @return Hash Configuration information about the given network
+#                network_purpose
+#                network_address_space
+#                network_gateway
+#                network_nameservers
+#                network_ddi_provider
+@network_configurations         = {}
+@missing_network_configurations = {}
+NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
+def get_network_configuration(network_name)
+  if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
+    begin
+      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{network_name}")
+    rescue
+      @missing_network_configurations[network_name] = "WARN: No network configuration exists"
+      $evm.log(:warn, "No network configuration for Network <#{network_name}> exists")
+    end
+  end
+  return @network_configurations[network_name]
+end
+
 begin
   dump_root()    if @DEBUG
   dump_current() if @DEBUG
@@ -145,45 +166,57 @@ begin
   vm,options = get_vm_and_options()
   
   # get destination network information
-  network_name                   = options[:destination_network] || options[:dialog_destination_network] || get_param(:destination_network)
-  network                        = $evm.vmdb(:lan).find_by_name(network_name) if !network_name.blank?
-  network_address_space_tag_name = network.tags(ADDRESS_SPACE_TAG_CATEGORY).first if !network.blank?
-  network_address_space_tag      = $evm.vmdb(:classification).find_by_name("#{ADDRESS_SPACE_TAG_CATEGORY}/#{network_address_space_tag_name}") if !network_address_space_tag_name.blank?
-  network_address_space          = network_address_space_tag.description if !network_address_space_tag.blank?
-  $evm.log(:info, "network_name                   => #{network_name}")                   if @DEBUG
-  $evm.log(:info, "network                        => #{network}")                        if @DEBUG
-  $evm.log(:info, "network_address_space_tag_name => #{network_address_space_tag_name}") if @DEBUG
-  $evm.log(:info, "network_address_space_tag      => #{network_address_space_tag}")      if @DEBUG
-  $evm.log(:info, "network_address_space          => #{network_address_space}")          if @DEBUG
+  network_name          = options[:destination_network] || options[:dialog_destination_network] || get_param(:destination_network)
+  network               = $evm.vmdb(:lan).find_by_name(network_name) if !network_name.blank?
+  network_configuration = get_network_configuration(network_name)
+  network_address_space = network_configuration['network_address_space']
+  error("Option <network_name> must be provided")                                                          if network_name.blank?
+  error("Could not find Network <#{network_name}>")                                                        if network.blank?
+  error("Could not find Network configuration for Network <#{network_name}>")                              if network_configuration.blank?
+  error("Network configuration <#{network_configuration}> must contain <network_address_space> parameter") if network_address_space.blank?
+  $evm.log(:info, "network_name          => #{network_name}")          if @DEBUG
+  $evm.log(:info, "network               => #{network}")               if @DEBUG
+  $evm.log(:info, "network_configuration => #{network_configuration}") if @DEBUG
+  $evm.log(:info, "network_address_space => #{network_address_space}") if @DEBUG
 
   # get other required options
-  destination_ip              = options[:destination_ip]              || options[:dialog_destination_ip]              || get_param(:destination_ip)
-  destination_network_gateway = options[:destination_network_gateway] || options[:dialog_destination_network_gateway] || get_param(:destination_network_gateway)
+  destination_ip              = options[:destination_ip_address] || options[:dialog_destination_ip_address] || get_param(:destination_ip_address)
+  error("One of <destination_ip, dialog_destination_ip_address> must be provided.") if destination_ip.blank?
 
-  # determine network gateway if not given
+  # determine network gateway
+  destination_network_gateway = options[:destination_network_gateway] || options[:dialog_destination_network_gateway] || get_param(:destination_network_gateway)
   if destination_network_gateway.blank?
-    network_gateway_tag_name    = network.tags(NETWORK_GATEWAY_TAG_CATEGORY).first
-    network_gateway_tag         = $evm.vmdb(:classification).find_by_name("#{NETWORK_GATEWAY_TAG_CATEGORY}/#{network_gateway_tag_name}") if !network_gateway_tag_name.blank?
-    destination_network_gateway = network_gateway_tag.description if !network_gateway_tag.blank?
-    $evm.log(:info, "network_gateway_tag_name    => #{network_gateway_tag_name}")    if @DEBUG
-    $evm.log(:info, "network_gateway_tag         => #{network_gateway_tag}")         if @DEBUG
-    $evm.log(:info, "destination_network_gateway => #{destination_network_gateway}") if @DEBUG
+    destination_network_gateway = network_configuration['network_gateway']
   end
+  $evm.log(:info, "destination_network_gateway => #{destination_network_gateway}") if @DEBUG
+  error("One of <destination_network_gateway, dialog_destination_network_gateway> must be provided " +
+        "or the Network configuration <#{network_configuration}> must contain <network_gateway> parameter.") if destination_network_gateway.blank?
   
   # build job parameters
   job_parameters = {
     :dialog_param_vm_network_ip4                => destination_ip,
     :dialog_param_vm_network_ip4_netmask_prefix => network_address_space.match(/[0-9\.]+\/([0-9]+)/)[1].to_i,
     :dialog_param_vm_network_gw4                => destination_network_gateway,
-    :dialog_param_virt_network                  => network_name,
-    :dialog_param_vsphere_network_type          => network.switch.shared ? 'dvs' : 'standard',
-    :dialog_param_vsphere_hostname              => vm.ext_management_system.hostname,
-    :dialog_param_vsphere_datacenter            => vm.datacenter.name,
-    :dialog_param_vsphere_username              => vm.ext_management_system.authentication_userid,
-    :dialog_param_vsphere_password              => vm.ext_management_system.authentication_password
+    :dialog_param_vm_network_dns4               => network_configuration['network_nameservers'].nil? ? nil : network_configuration['network_nameservers'].join(','),
+    :dialog_param_virt_network                  => network_name
   }
+  case vm.vendor
+    when 'vmware'
+      job_parameters[:dialog_param_vsphere_network_type] = network.switch.shared ? 'dvs' : 'standard'
+      job_parameters[:dialog_param_vsphere_hostname]     = vm.ext_management_system.hostname
+      job_parameters[:dialog_param_vsphere_datacenter]   = vm.datacenter.name
+      job_parameters[:dialog_param_vsphere_username]     = vm.ext_management_system.authentication_userid
+      job_parameters[:dialog_param_vsphere_password]     = vm.ext_management_system.authentication_password
+      job_parameters[:dialog_param_vsphere_network_type] = network.switch.shared ? 'dvs' : 'standard'
+    when 'redhat'
+      job_parameters[:dialog_param_ovirt_url]      = vm.ext_management_system.hostname
+      job_parameters[:dialog_param_ovirt_username] = vm.ext_management_system.authentication_userid
+      job_parameters[:dialog_param_ovirt_password] = vm.ext_management_system.authentication_password
+    else
+      error("Unsported virtualization vendor <#{vm.vendor}> for configuring VM network and IP address")
+  end
   
   # set required job parameters
-  job_parameters.each { |k,v| $evm.object[k.to_s] = v }
+  job_parameters.each { |k,v| $evm.object[k.to_s] = v; $evm.root[k.to_s] = v }
   $evm.log(:info, "Set Ansible Tower Job Parameters: #{job_parameters}")
 end
