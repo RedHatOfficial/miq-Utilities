@@ -14,20 +14,29 @@ result      = task.statemachine_task_status
 
 $evm.log('info', "Service Provision Check returned <#{result}> for state <#{task.state}> and status <#{task_status}>")
 
+
 if result == 'ok' || result == 'retry'
+  # assume ready to move on
+  new_result = 'ok'
+  
+  # need to retry because of sub tasks?
   if task.miq_request_tasks.any? { |t| t.state != 'finished' }
-    result = 'retry'
+    new_result = 'retry'
     $evm.log('info', "Child tasks not finished. Setting retry for task: #{task.id} ")
   end
   
+  # need to retry because of sub provision requests?
   # check for any provision requests set and wait for those to finish
   provision_request_ids = task.get_option(:provision_request_ids) || {}
   provision_request_ids = provision_request_ids.values
   $evm.log(:info, "provision_request_ids => #{provision_request_ids}") if @DEBUG
+  $evm.log(:info, "Child provision requests states <#{provision_request_ids.collect { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id).state }}>") if @DEBUG
   if provision_request_ids.any? { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id).state != 'finished' }
-    result = 'retry'
+    new_result = 'retry'
     $evm.log('info', "Child provision requests not finished. Setting restult <#{result}> for task: #{task.id} ")
   end
+  
+  result = new_result
 end
 
 case result
