@@ -101,18 +101,14 @@ def create_provision_requests(task, requester, number_of_vms,
   # if a cloud network
   # else infrastructure network
   if provisioning_network.respond_to?(:cloud_network)
+    vm_fields[:placement_auto]              = false
     vm_fields[:cloud_subnet]                = provisioning_network.id
     vm_fields[:cloud_network]               = provisioning_network.cloud_network_id
     vm_fields[:placement_availability_zone] = provisioning_network.availability_zone_id
-    
-    # TODO: figure out these parameters
-    #vm_fields[:instance_type]         = ???
-    #vm_fields[:security_groups]       = ???
-    #vm_fields[:guest_access_key_pair] = ???
   else
-    vm_fields[:vlan] = provisioning_network_name
+    vm_fields[:placement_auto] = true
+    vm_fields[:vlan]           = provisioning_network_name
   end
-  
   
   vm_fields.merge!(custom_vm_fields)
   vm_fields.merge!(dialog_options)
@@ -228,8 +224,12 @@ begin
     destination_network_gateway = dialog_options["provider_#{index}_destination_network_gateway".to_sym]
     
     # handle cloud provider specific options
-    cloud_flavor_id = dialog_options["provider_#{index}_cloud_flavor".to_sym]
-    custom_vm_fields[:instance_type] = cloud_flavor_id if !cloud_flavor_id.blank?
+    cloud_flavor_id  = dialog_options["provider_#{index}_cloud_flavor".to_sym]
+    cloud_ssh_key_id = dialog_options["provider_#{index}_cloud_ssh_key".to_sym]
+    custom_vm_fields[:instance_type]         = cloud_flavor_id  if !cloud_flavor_id.blank?
+    custom_vm_fields[:guest_access_key_pair] = cloud_ssh_key_id if !cloud_ssh_key_id.blank?
+    # TODO: figure out these parameters
+    #custom_vm_fields[:security_groups]       = ???
     
     # create provision requests
     new_provision_requests |= create_provision_requests(
