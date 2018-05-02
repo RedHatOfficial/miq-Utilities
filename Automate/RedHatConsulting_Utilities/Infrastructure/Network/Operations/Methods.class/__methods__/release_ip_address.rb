@@ -34,6 +34,22 @@ def error(msg)
   exit MIQ_STOP
 end
 
+# Notify and log a message.
+#
+# @param level   Symbol             Level of the notification and log message
+# @param message String             Message to notify and log
+# @param subject ActiveRecord::Base Subject of the notification
+def notify(level, message, subject)
+  $evm.create_notification(:level => level, :message => message, :subject => subject)
+  log_level = case level
+    when :warning
+      :warn
+    else
+      level
+  end
+  $evm.log(log_level, message)
+end
+
 # There are many ways to attempt to pass parameters in Automate.
 # This function checks all of them in priorty order as well as checking for symbol or string.
 #
@@ -147,10 +163,11 @@ NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
 def get_network_configuration(network_name)
   if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
     begin
-      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{network_name}")
-    rescue => e
+      escaped_network_name                  = network_name.gsub(/[^a-zA-Z0-9_\.\-]/, '_')
+      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
+    rescue
       @missing_network_configurations[network_name] = "WARN: No network configuration exists"
-      $evm.log(:warn, "No network configuration for Network <#{network_name}> exists")
+      $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
     end
   end
   return @network_configurations[network_name]
@@ -163,7 +180,22 @@ begin
   #       decide how to determine which network interfaces to release the IPs for...
   #
   # TODO: don't hard code this to first interface
-  network_name          = vm.hardware.networks[0].guest_device.lan.name
+  network = vm.hardware.nics[0].lan
+  
+  # TODO: figure out some workaround to this issue or do something else here.
+  # deal with https://bugzilla.redhat.com/show_bug.cgi?id=1572917
+  if network.nil?
+    notify(
+      :warning,
+      "Could not determine Network for VM <#{vm.name} to release IP address due to " +
+       "https://bugzilla.redhat.com/show_bug.cgi?id=1572917. IP address will need to be manually released. " +
+       "Ignoring & Skipping.",
+      vm
+    )
+    exit MIQ_OK
+  end
+  
+  network_name          = network.name
   network_configuration = get_network_configuration(network_name)
   $evm.log(:info, "network_name          => #{network_name}")          if @DEBUG
   $evm.log(:info, "network_configuration => #{network_configuration}") if @DEBUG
