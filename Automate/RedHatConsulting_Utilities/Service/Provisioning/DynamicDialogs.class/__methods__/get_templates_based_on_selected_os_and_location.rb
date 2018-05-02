@@ -139,9 +139,9 @@ begin
     selected_templates.each do |selected_template|
       # add the provider options
       value << {
-        :provider         => selected_template.ext_management_system.name,
-        :name             => selected_template.name,
-        :guid             => selected_template.guid
+        :provider => selected_template.ext_management_system.name,
+        :name     => selected_template.name,
+        :guid     => selected_template.guid
       }
     end
     value = value.to_yaml
