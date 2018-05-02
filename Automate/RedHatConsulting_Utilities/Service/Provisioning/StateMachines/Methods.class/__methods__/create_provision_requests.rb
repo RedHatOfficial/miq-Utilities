@@ -93,7 +93,7 @@ def create_provision_requests(task, requester, number_of_vms,
   
   # determine if the provisioning network is a distributed vswitch or not
   provisioning_network = $evm.vmdb(:lan).find_by_name(provisioning_network_name) || $evm.vmdb(:cloud_subnet).find_by_name(provisioning_network_name)
-  if !(provisioning_network_name =~ /^dvs_/) && provisioning_network && provisioning_network.switch.shared
+  if !(provisioning_network_name =~ /^dvs_/) && provisioning_network && (provisioning_network.respond_to?(:switch) && provisioning_network.switch.shared)
     provisioning_network_name = "dvs_#{provisioning_network_name}"
   end
   $evm.log(:info, "provisioning_network_name => #{provisioning_network_name}") if @DEBUG
@@ -227,6 +227,11 @@ begin
     destination_network         = dialog_options["provider_#{index}_destination_network".to_sym]
     destination_network_gateway = dialog_options["provider_#{index}_destination_network_gateway".to_sym]
     
+    # handle cloud provider specific options
+    cloud_flavor_id = dialog_options["provider_#{index}_cloud_flavor".to_sym]
+    custom_vm_fields[:instance_type] = cloud_flavor_id if !cloud_flavor_id.blank?
+    
+    # create provision requests
     new_provision_requests |= create_provision_requests(
                                 task,
                                 user,
