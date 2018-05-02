@@ -89,17 +89,31 @@ def create_provision_requests(task, requester, number_of_vms,
   # === END: template_fields
 
   # === START: vm_fields
+  vm_fields = {}
   
   # determine if the provisioning network is a distributed vswitch or not
-  provisioning_network = $evm.vmdb(:lan).find_by_name(provisioning_network_name)
+  provisioning_network = $evm.vmdb(:lan).find_by_name(provisioning_network_name) || $evm.vmdb(:cloud_subnet).find_by_name(provisioning_network_name)
   if !(provisioning_network_name =~ /^dvs_/) && provisioning_network && provisioning_network.switch.shared
     provisioning_network_name = "dvs_#{provisioning_network_name}"
   end
   $evm.log(:info, "provisioning_network_name => #{provisioning_network_name}") if @DEBUG
   
-  vm_fields = {
-    :vlan => provisioning_network_name
-  }
+  # if a cloud network
+  # else infrastructure network
+  if provisioning_network.respond_to?(:cloud_network)
+    vm_fields[:cloud_subnet]                = provisioning_network.id
+    vm_fields[:cloud_network]               = provisioning_network.cloud_network_id
+    vm_fields[:placement_availability_zone] = provisioning_network.availability_zone_id
+    
+    # TODO: figure out these parameters
+    #vm_fields[:instance_type]         = ???
+    #vm_fields[:security_groups]       = ???
+    #vm_fields[:guest_access_key_pair] = ???
+  else
+    vm_fields[:vlan] = provisioning_network_name
+  end
+  
+  
   vm_fields.merge!(custom_vm_fields)
   vm_fields.merge!(dialog_options)
   
