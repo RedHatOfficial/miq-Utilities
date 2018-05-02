@@ -6,7 +6,7 @@
 # @param dialog_cores_per_socket    Int    Number of cores per socket
 # @dialog_dialog_vm_memory          Int    Amount of memmory in GB
 #
-@DEBUG = true
+@DEBUG = false
 
 TEMPLATES_DIALOG_OPTION = 'dialog_templates'.freeze
 

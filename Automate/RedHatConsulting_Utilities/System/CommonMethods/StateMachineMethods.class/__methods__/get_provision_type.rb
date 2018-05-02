@@ -11,7 +11,7 @@
 #   EVM OBJECT
 #     provision_type - Provision type to use in the VMProvision_*/* state machine
 #
-@DEBUG = true
+@DEBUG = false
 
 # Logs all $evm.root attributes
 def dump_root()
