@@ -9,5 +9,5 @@ object:
     description: 
   fields:
   - execute:
-      value: get_networks(network_purpose_tag_name => 'provisioning', destination_provider_index
+      value: get_networks(network_purpose => 'provisioning', destination_provider_index
         => 2)
