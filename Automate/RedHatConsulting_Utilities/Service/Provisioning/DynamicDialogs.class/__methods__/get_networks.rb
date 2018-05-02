@@ -89,10 +89,12 @@ NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
 def get_network_configuration(network_name)
   if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
     begin
-      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{network_name}")
-    rescue => e
+      escaped_network_name                  = network_name.gsub(/[^a-zA-Z0-9_\.\-]/, '_')
+      $evm.log(:info, "escaped_network_name => #{escaped_network_name}") if @DEBUG
+      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
+    rescue
       @missing_network_configurations[network_name] = "WARN: No network configuration exists"
-      $evm.log(:warn, "No network configuration for Network <#{network_name}> exists")
+      $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
     end
   end
   return @network_configurations[network_name]
@@ -103,61 +105,78 @@ begin
   dump_current() if @DEBUG
   
   # If there isn't a vmdb_object_type yet just exit. The method will be recalled with an vmdb_object_type
-  visible_and_required = !$evm.root['vmdb_object_type'].blank?
+  destination_provider_enabled = !$evm.root['vmdb_object_type'].blank?
   $evm.log(:info, "$evm.root['vmdb_object_type'] => #{$evm.root['vmdb_object_type']}") if @DEBUG
   
   # If there are not any selected destination templates then hide dialog element
   destination_templates_yaml = get_param(TEMPLATES_DIALOG_OPTION)
-  visible_and_required &= destination_templates_yaml =~ /^---/
+  destination_provider_enabled &= destination_templates_yaml =~ /^---/
   $evm.log(:info, "destination_templates_yaml => #{destination_templates_yaml}") if @DEBUG
   
   # get parameters
-  if visible_and_required
-    destination_templates      = YAML.load(destination_templates_yaml)
-    destination_provider_index = get_param(:destination_provider_index)
-    network_purpose            = get_param(:network_purpose)
-    
-    $evm.log(:info, "destination_templates      => #{destination_templates}")      if @DEBUG
-    $evm.log(:info, "destination_provider_index => #{destination_provider_index}") if @DEBUG
-    $evm.log(:info, "network_purpose            => #{network_purpose}")            if @DEBUG
-    
-    # ensure there are more destination templates/providers then this destination network dialog is for
-    visible_and_required &= destination_templates.length > destination_provider_index
-  end
+  destination_provider_index = get_param(:destination_provider_index)
+  network_purpose            = get_param(:network_purpose)
+  required                   = get_param(:required)
+  $evm.log(:info, "destination_provider_index => #{destination_provider_index}") if @DEBUG
+  $evm.log(:info, "network_purpose            => #{network_purpose}")            if @DEBUG
+  $evm.log(:info, "required                   => #{required}")                   if @DEBUG
   
-  # determine the destination networks shared by all hosts on the selected destination provider
-  all_host_destination_networks = []
-  destination_provider_name     = nil
-  if visible_and_required
+  # determine if provier with given index is selected
+  if destination_provider_enabled
+    destination_templates      = YAML.load(destination_templates_yaml)
+    $evm.log(:info, "destination_templates      => #{destination_templates}")      if @DEBUG
+
+    # ensure there are more destination templates/providers then this destination network dialog is for
+    destination_provider_enabled &= destination_templates.length > destination_provider_index
+  end
+    
+  selectable_networks       = {}
+  destination_provider_name = nil
+  if destination_provider_enabled
+    # determine desintation provider
     destination_provider_name = destination_templates[destination_provider_index][:provider]
     destination_provider      = $evm.vmdb(:ems).find_by_name(destination_provider_name)
-    
     $evm.log(:info, "destination_provider_name => #{destination_provider_name}") if @DEBUG
     $evm.log(:info, "destination_provider      => #{destination_provider}")      if @DEBUG
 
+    # collect host based networks
+    all_host_networks = []
     destination_provider.hosts.each do |host|
       # find all the host destination networks
-      host_destination_lans = []
+      host_networks = []
       host.lans.each do |lan|
         network_configuraiton = get_network_configuration(lan.name)
         $evm.log(:info, "network_configuraiton['network_purpose'] => #{network_configuraiton.blank? ? nil : network_configuraiton['network_purpose']}") if @DEBUG
-        host_destination_lans << lan if !network_configuraiton.blank? && (network_configuraiton['network_purpose'].include?(network_purpose))
+        host_networks << lan if !network_configuraiton.blank? && (network_configuraiton['network_purpose'].include?(network_purpose))
       end
 
-      all_host_destination_networks << host_destination_lans.collect { |lan| lan.name }
+      all_host_networks << host_networks.collect { |lan| lan.name }
     end
-    $evm.log(:info, "all_host_destination_networks => #{all_host_destination_networks}") if @DEBUG
-
+    $evm.log(:info, "all_host_networks => #{all_host_networks}") if @DEBUG
     # `inject(:&) does an `&` opertion on all elements of the array, thus doing an intersection
-    intersection_of_host_destination_lans = all_host_destination_networks.inject(:&)
-    $evm.log(:info, "intersection_of_host_destination_lans => #{intersection_of_host_destination_lans}") if @DEBUG
-  end
+    intersection_of_host_networks = all_host_networks.inject(:&)
+    $evm.log(:info, "intersection_of_host_networks => #{intersection_of_host_networks}") if @DEBUG
+    
+    # collect cloud based networks
+    all_cloud_networks = []
+    if destination_provider.respond_to?(:network_manager)
+      destination_provider.network_manager.cloud_subnets.each do |cloud_subnet|
+        network_configuraiton = get_network_configuration(cloud_subnet.name)
+        $evm.log(:info, "network_configuraiton['network_purpose'] => #{network_configuraiton.blank? ? nil : network_configuraiton['network_purpose']}") if @DEBUG
+        all_cloud_networks << cloud_subnet.name if !network_configuraiton.blank? && (network_configuraiton['network_purpose'].include?(network_purpose))
+      end
+    end
+    $evm.log(:info, "all_cloud_networks => #{all_cloud_networks}") if @DEBUG
+
+    # determine the destination networks shared by all hosts on the selected destination provide
+    all_networks  = []
+    all_networks += intersection_of_host_networks if !intersection_of_host_networks.blank?
+    all_networks += all_cloud_networks            if !all_cloud_networks.blank?
+    $evm.log(:info, "all_networks => #{all_networks}") if @DEBUG
   
-  # determine the selecatable networks shared by all hosts that are also have network configuration with a network address space
-  selectable_networks = {}
-  if visible_and_required
-    intersection_of_host_destination_lans.each do |network_name|
-      network               = $evm.vmdb(:lan).find_by_name(network_name)
+    # determine the selecatable networks shared by all hosts that are also have network configuration with a network address space
+    all_networks.each do |network_name|
+      network               = $evm.vmdb(:lan).find_by_name(network_name) || $evm.vmdb(:cloud_subnet).find_by_name(network_name)
       network_configuration = get_network_configuration(network.name)
       if !network_configuration['network_address_space'].blank?
         selectable_networks[network_name] = "#{network_configuration['network_address_space']} (#{network_name}) (#{destination_provider_name})"
@@ -168,11 +187,14 @@ begin
   
   # if should be visible but can't find network configurations, show error
   # else prompt the user what this dialog element is for
-  if visible_and_required && selectable_networks.empty?
+  if required && destination_provider_enabled && selectable_networks.empty?
     selectable_networks[nil] = "ERROR: No Networks on Provider <#{destination_provider_name}> with configuration instances in <#{NETWORK_CONFIGURATION_URI}>."
-  elsif visible_and_required && selectable_networks.length > 1
+  elsif destination_provider_enabled && selectable_networks.length > 1
     selectable_networks[nil] = "--- Select <#{destination_provider_name}> Destination Network"
   end
+  
+  # determine if the dialog element should be visible and required
+  visible_and_required = destination_provider_enabled && (required || selectable_networks.length > 1)
   
   # create dialog element
   dialog_field = $evm.object

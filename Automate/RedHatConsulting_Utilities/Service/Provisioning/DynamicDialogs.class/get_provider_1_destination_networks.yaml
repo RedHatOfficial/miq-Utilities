@@ -10,4 +10,4 @@ object:
   fields:
   - execute:
       value: get_networks(network_purpose => 'destination', destination_provider_index
-        => 1)
+        => 1, required => 'false')
