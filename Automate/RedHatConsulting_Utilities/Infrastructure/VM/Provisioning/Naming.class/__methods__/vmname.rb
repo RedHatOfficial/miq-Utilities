@@ -7,7 +7,7 @@
 # 2. Else use VM name chosen in dialog
 # 3. Add 3 digit suffix to vmname if more than one VM is being provisioned unless the supplied VM name contains . (DOT) in which case it is an FQDN
 #
-module ManageIQ
+module Utilities
   module Automate
     module Infrastructure
       module VM
@@ -123,5 +123,5 @@ module ManageIQ
 end
 
 if __FILE__ == $PROGRAM_NAME
-  ManageIQ::Automate::Infrastructure::VM::Provisioning::Naming::VmName.new.main
+  Utilities::Automate::Infrastructure::VM::Provisioning::Naming::VmName.new.main
 end
