@@ -155,6 +155,6 @@ begin
                                          "that match the selected number of sockets <#{number_of_sockets}>, " +
                                          "cores per socket <#{cores_per_socket}>, and Memory <#{memory_mb} (MB)>."})
   end
-  selectable_flavors = Hash[ *valid_flavors.collect { |flavor| [flavor['id'], "#{flavor['Description']} (destination_provider_name)"] }.flatten ]
+  selectable_flavors = Hash[ *valid_flavors.collect { |flavor| [flavor['id'], "#{flavor['Description']} (#{destination_provider_name})"] }.flatten ]
   return_dialog_element(destination_cloud_provider_enabled, selectable_flavors)
 end
