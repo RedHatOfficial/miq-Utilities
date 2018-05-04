@@ -41,8 +41,6 @@ end
 # @param requester                   User                         User requesting the new VMs
 # @param number_of_vms               Integer                      Number of VMs to provision
 # @param provisioning_network_name   String                       Provisioning network name
-# @param destination_network_name    String                       Destination network name
-# @param destination_network_gateway String                       Destination network gateway
 # @param template_fields             Hash                         Hash describing the template to use.
 #                                                                 Must contain :name and :guid fields.
 # @param dialog_options              Hash                         User set options via dialog
@@ -58,14 +56,12 @@ end
 #
 # @return Array all of the created requests
 def create_provision_requests(task, requester, number_of_vms,
-                              provisioning_network_name, destination_network_name, destination_network_gateway,
+                              provisioning_network_name,
                               template_fields, dialog_options,
                               tags = {}, custom_vm_fields = {}, custom_additional_values = {}, create_seperate_requests = true)
   $evm.log(:info, "START: create_provision_requests")                              if @DEBUG
   $evm.log(:info, "number_of_vms               => #{number_of_vms}")               if @DEBUG
   $evm.log(:info, "provisioning_network_name   => #{provisioning_network_name}")   if @DEBUG
-  $evm.log(:info, "destination_network_name    => #{destination_network_name}")    if @DEBUG
-  $evm.log(:info, "destination_network_gateway => #{destination_network_gateway}") if @DEBUG
   $evm.log(:info, "template_fields             => #{template_fields}")             if @DEBUG
   $evm.log(:info, "dialog_options              => #{dialog_options}")              if @DEBUG
   $evm.log(:info, "tags                        => #{tags}")                        if @DEBUG
@@ -132,8 +128,6 @@ def create_provision_requests(task, requester, number_of_vms,
   # === START: additional_values (AKA: ws_values)
   additional_values = {
     :service_id                  => task.destination.id,
-    :destination_network         => destination_network_name,
-    :destination_network_gateway => destination_network_gateway
   }
   additional_values.merge!(custom_additional_values)
   additional_values.merge!(dialog_options)
@@ -219,9 +213,13 @@ begin
     number_of_vms_for_this_template  = base_vms_per_template
     number_of_vms_for_this_template += 1 if index < number_of_vms % templates.length
     
-    provisioning_network        = dialog_options["provider_#{index}_provisioning_network".to_sym]
-    destination_network         = dialog_options["provider_#{index}_destination_network".to_sym]
+    # set custom additional values
+    destination_network_name    = dialog_options["provider_#{index}_destination_network".to_sym]
     destination_network_gateway = dialog_options["provider_#{index}_destination_network_gateway".to_sym]
+    domain_name                 = dialog_options["provider_#{index}_domain_name".to_sym]
+    custom_additional_values[:destination_network]         = destination_network_name
+    custom_additional_values[:destination_network_gateway] = destination_network_gateway
+    custom_additional_values[:domain_name]                 = domain_name
     
     # handle cloud provider specific options
     cloud_flavor_id  = dialog_options["provider_#{index}_cloud_flavor".to_sym]
@@ -232,13 +230,12 @@ begin
     #custom_vm_fields[:security_groups]       = ???
     
     # create provision requests
+    provisioning_network_name = dialog_options["provider_#{index}_provisioning_network".to_sym]
     new_provision_requests |= create_provision_requests(
                                 task,
                                 user,
                                 number_of_vms_for_this_template,
-                                provisioning_network,
-                                destination_network,
-                                destination_network_gateway,
+                                provisioning_network_name,
                                 template_fields,
                                 dialog_options,
                                 dialog_tags,
