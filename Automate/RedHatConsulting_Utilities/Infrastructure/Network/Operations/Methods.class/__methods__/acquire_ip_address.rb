@@ -214,7 +214,7 @@ begin
     end
     error("Error acquiring IP address using DDI Provider <#{ddi_provider}>: #{reason}") if !success
   else
-    notify(:warning, "No value for the expected network name parameter <#{network_name_parameter_name}> was given. Skipping aquiring IP address.", vm)
+    $evm.log(:warn, "No value for the expected network name parameter <#{network_name_parameter_name}> was given. Skipping aquiring IP address.")
   end
   
   # set the acquired IP

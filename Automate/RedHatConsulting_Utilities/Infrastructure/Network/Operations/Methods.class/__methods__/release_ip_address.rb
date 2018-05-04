@@ -185,12 +185,11 @@ begin
   # TODO: figure out some workaround to this issue or do something else here.
   # deal with https://bugzilla.redhat.com/show_bug.cgi?id=1572917
   if network.nil?
-    notify(
-      :warning,
+    $evm.log(
+      :warn,
       "Could not determine Network for VM <#{vm.name} to release IP address due to " +
        "https://bugzilla.redhat.com/show_bug.cgi?id=1572917. IP address will need to be manually released. " +
-       "Ignoring & Skipping.",
-      vm
+       "Ignoring & Skipping."
     )
     exit MIQ_OK
   end
