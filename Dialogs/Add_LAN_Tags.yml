@@ -1,7 +1,7 @@
 ---
-- description: Dialog for removing multiple tags from selected LANs
+- description: Dialog for adding tags to multiple selected LANs.
   buttons: submit,cancel
-  label: Remove LAN Tags
+  label: Add LAN Tags
   blueprint_id: 
   dialog_tabs:
   - description: 
@@ -20,6 +20,7 @@
       dialog_fields:
       - name: lan_names
         description: 
+        type: DialogFieldDropDownList
         data_type: 
         notes: 
         notes_display: 
@@ -30,9 +31,7 @@
         required_method: 
         required_method_options: {}
         default_value: 
-        values:
-        - - 
-          - "<None>"
+        values: []
         values_method: 
         values_method_options: {}
         options:
@@ -49,7 +48,6 @@
         auto_refresh: 
         trigger_auto_refresh: true
         visible: true
-        type: DialogFieldDropDownList
         resource_action:
           action: 
           resource_type: DialogField
@@ -60,14 +58,15 @@
           ae_attributes: {}
     - description: 
       display: edit
-      label: Remove Tags
+      label: Add Tags
       display_method: 
       display_method_options: 
       position: 1
       dialog_fields:
       - name: tag_category
         description: 
-        data_type: string
+        type: DialogFieldDropDownList
+        data_type: 
         notes: 
         notes_display: 
         display: edit
@@ -77,33 +76,11 @@
         required_method: 
         required_method_options: {}
         default_value: 
-        values:
-        - - 
-          - 
-        - - location
-          - Location
-        - - folder_path_blue
-          - Parent Folder Path (VMs & Templates)
-        - - folder_path_yellow
-          - Parent Folder Path (Hosts & Clusters)
-        - - itewk_test_single
-          - iTewk Test Single
-        - - itewk_test_multi
-          - iTewk Test Multi
-        - - ldap_sync_successful
-          - LDAP Sync Successful
-        - - os
-          - Operating System
-        - - environment
-          - environment
-        - - lan_purpose
-          - LAN Purpose
+        values: []
         values_method: 
         values_method_options: {}
         options:
           :force_multi_value: false
-          :sort_by: :value
-          :sort_order: :ascending
         label: Tag Category
         position: 0
         validator_type: 
@@ -116,7 +93,6 @@
         auto_refresh: 
         trigger_auto_refresh: true
         visible: true
-        type: DialogFieldDropDownList
         resource_action:
           action: 
           resource_type: DialogField
@@ -127,6 +103,7 @@
           ae_attributes: {}
       - name: multiselect_tags
         description: 
+        type: DialogFieldDropDownList
         data_type: 
         notes: 
         notes_display: 
@@ -137,14 +114,12 @@
         required_method: 
         required_method_options: {}
         default_value: 
-        values:
-        - - 
-          - "<None>"
+        values: []
         values_method: 
         values_method_options: {}
         options:
           :force_multi_value: true
-        label: Tags
+        label: Multiselect Tags
         position: 1
         validator_type: 
         validator_rule: 
@@ -155,14 +130,51 @@
         read_only: false
         auto_refresh: true
         trigger_auto_refresh: false
-        visible: true
-        type: DialogFieldDropDownList
+        visible: false
         resource_action:
           action: 
           resource_type: DialogField
           ae_namespace: System
           ae_class: DynamicDialogs
-          ae_instance: get_tags_multiselect_always_visible
+          ae_instance: get_tags_multiselect
+          ae_message: 
+          ae_attributes: {}
+      - name: single_value_tag
+        description: 
+        type: DialogFieldDropDownList
+        data_type: 
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: false
+        required_method: 
+        required_method_options: {}
+        default_value: 
+        values: []
+        values_method: 
+        values_method_options: {}
+        options:
+          :force_multi_value: false
+        label: Single Value Tag
+        position: 2
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: false
+        auto_refresh: true
+        trigger_auto_refresh: 
+        visible: false
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: System
+          ae_class: DynamicDialogs
+          ae_instance: get_tags_single_value
           ae_message: 
           ae_attributes: {}
     - description: 
@@ -174,6 +186,7 @@
       dialog_fields:
       - name: shared_existing_tags
         description: 
+        type: DialogFieldTextAreaBox
         data_type: 
         notes: 
         notes_display: 
@@ -184,7 +197,7 @@
         required_method: 
         required_method_options: {}
         default_value: ''
-        values: ''
+        values: []
         values_method: 
         values_method_options: {}
         options:
@@ -201,7 +214,6 @@
         auto_refresh: true
         trigger_auto_refresh: 
         visible: true
-        type: DialogFieldTextAreaBox
         resource_action:
           action: 
           resource_type: DialogField
@@ -212,6 +224,7 @@
           ae_attributes: {}
       - name: all_existing_tags
         description: 
+        type: DialogFieldTextAreaBox
         data_type: 
         notes: 
         notes_display: 
@@ -222,7 +235,7 @@
         required_method: 
         required_method_options: {}
         default_value: ''
-        values: ''
+        values: []
         values_method: 
         values_method_options: {}
         options:
@@ -239,7 +252,6 @@
         auto_refresh: true
         trigger_auto_refresh: 
         visible: true
-        type: DialogFieldTextAreaBox
         resource_action:
           action: 
           resource_type: DialogField

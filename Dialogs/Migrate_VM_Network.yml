@@ -1,0 +1,58 @@
+---
+- description: 
+  buttons: submit,cancel
+  label: Migrate VM Network
+  blueprint_id: 
+  dialog_tabs:
+  - description: 
+    display: edit
+    label: Network
+    display_method: 
+    display_method_options: 
+    position: 0
+    dialog_groups:
+    - description: 
+      display: edit
+      label: Destination Network
+      display_method: 
+      display_method_options: 
+      position: 0
+      dialog_fields:
+      - name: destination_network
+        description: 
+        type: DialogFieldDropDownList
+        data_type: 
+        notes: 
+        notes_display: 
+        display: edit
+        display_method: 
+        display_method_options: {}
+        required: true
+        required_method: 
+        required_method_options: {}
+        default_value: 
+        values: []
+        values_method: 
+        values_method_options: {}
+        options:
+          :force_multi_value: false
+        label: Destination Network
+        position: 0
+        validator_type: 
+        validator_rule: 
+        reconfigurable: 
+        dynamic: true
+        show_refresh_button: 
+        load_values_on_init: 
+        read_only: false
+        auto_refresh: 
+        trigger_auto_refresh: 
+        visible: true
+        resource_action:
+          action: 
+          resource_type: DialogField
+          ae_namespace: Infrastructure/Network
+          ae_class: DynamicDialogs
+          ae_instance: get_available_destination_networks
+          ae_message: 
+          ae_attributes: {}
