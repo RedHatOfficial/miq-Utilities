@@ -1,0 +1,75 @@
+---
+object_type: class
+version: 1.0
+object:
+  attributes:
+    description: Invokes an Ansible Tower Job only if the required Job Template parameter(s)
+      are given. Otherwise just skips.
+    display_name: 
+    name: OptionalJobTemplate
+    type: 
+    inherits: 
+    visibility: 
+    owner: 
+  schema:
+  - field:
+      aetype: state
+      name: VerifyParameters
+      display_name: 
+      datatype: string
+      priority: 1
+      owner: 
+      default_value: "/AutomationManagement/AnsibleTower/Operations/Methods/verify_parameters"
+      substitute: true
+      message: create
+      visibility: 
+      collect: "/job_template = job_template; /job_template_name = job_template_name;
+        /job_template_id = job_template_id"
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: skip_to_state(next_state => "Finish")
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: state
+      name: Launch
+      display_name: 
+      datatype: string
+      priority: 2
+      owner: 
+      default_value: "/AutomationManagement/AnsibleTower/Operations/StateMachines/Job/Default"
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: state
+      name: Finish
+      display_name: 
+      datatype: string
+      priority: 3
+      owner: 
+      default_value: 
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
