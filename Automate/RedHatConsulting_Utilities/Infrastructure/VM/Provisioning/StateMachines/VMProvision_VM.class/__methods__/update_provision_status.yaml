@@ -4,7 +4,7 @@ version: 1.0
 object:
   attributes:
     name: update_provision_status
-    display_name: Update Provision Status with Telemetry and Email Notificaiton
+    display_name: Update Provision Status with Telemetry and Email Notification
     description: 
     scope: instance
     language: ruby
