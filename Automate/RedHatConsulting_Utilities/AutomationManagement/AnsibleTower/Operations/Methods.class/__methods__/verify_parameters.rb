@@ -1,7 +1,7 @@
 #
 # Description: <Method description here>
 #
-@DEBUG = true
+@DEBUG = false
 
 def dump_object(object_string, object)
   $evm.log("info", "Listing #{object_string} Attributes:") 
