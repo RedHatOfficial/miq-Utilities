@@ -35,6 +35,61 @@ def yaml_data(task, option)
   task.get_option(option).nil? ? nil : YAML.load(task.get_option(option))
 end
 
+#
+# Utility library for Red Hat Virtualization
+#
+require 'ovirtsdk4'
+module Automation
+  module Infrastructure
+    module VM
+      module RedHat
+        class Utils
+          
+          def initialize(ems, handle = $evm)
+            @debug      = true
+            @handle     = handle
+            @ems        = ems_to_service_model(ems)
+            @connection = connection(@ems)
+          end          
+
+          def vnic_profile_id(profile_name)
+            vnic_profile = vnic_profiles_service.list.select { |profile| 
+              profile.name == profile_name 
+            }.first
+            vnic_profile.id
+          end
+      
+          private
+      
+          def ems_to_service_model(ems)
+            raise "Invalid EMS" if ems.nil?
+            # ems could be a numeric id or the ems object itself
+            unless ems.is_a?(DRb::DRbObject) && /Manager/.match(ems.type.demodulize)
+              if /^\d{1,13}$/.match(ems.to_s)
+                ems = @handle.vmdb(:ems, ems)
+              end
+            end
+            ems
+          end
+      
+          def vnic_profiles_service
+            @connection.system_service.vnic_profiles_service
+          end
+                
+          def connection(ems)
+            connection = OvirtSDK4::Connection.new(
+              url: "https://#{ems.hostname}/ovirt-engine/api",
+              username: ems.authentication_userid,
+              password: ems.authentication_password,
+              insecure: true)
+            connection if connection.test(true)
+          end
+        end
+      end
+    end
+  end
+end
+
 # Creates provision requests based on the givin parameters.
 #
 # @param task                        ServiceTemplateProvisionTask Task used to create the service that will own the VMs created by these provision request(s)
@@ -103,8 +158,19 @@ def create_provision_requests(task, requester, number_of_vms,
     vm_fields[:placement_availability_zone] = provisioning_network.availability_zone_id
   else
     vm_fields[:placement_auto] = true
-    vm_fields[:vlan]           = provisioning_network_name
+    
+    # if provider is RHV and CFME version 5.9 or above use VLAN profile ID
+    # else use vlan name
+    template = $evm.vmdb(:vm_or_template).find_by_guid(template_fields[:guid])
+    $evm.log(:info, "template => #{template}") if @DEBUG
+    if (template.ext_management_system.type =~ /Redhat/) && ($evm.root['miq_server'].version >= '5.9')
+      vnic_profile_id = Automation::Infrastructure::VM::RedHat::Utils.new(template.ext_management_system).vnic_profile_id(provisioning_network_name)
+      vm_fields[:vlan] = vnic_profile_id
+    else
+       vm_fields[:vlan] = provisioning_network_name
+    end
   end
+  vm_fields[:network_adapters] = 1
   
   vm_fields.merge!(custom_vm_fields)
   vm_fields.merge!(dialog_options)
@@ -127,7 +193,8 @@ def create_provision_requests(task, requester, number_of_vms,
 
   # === START: additional_values (AKA: ws_values)
   additional_values = {
-    :service_id                  => task.destination.id,
+    :service_id   => task.destination.id,
+    :network_name => provisioning_network_name
   }
   additional_values.merge!(custom_additional_values)
   additional_values.merge!(dialog_options)
@@ -214,23 +281,23 @@ begin
     number_of_vms_for_this_template += 1 if index < number_of_vms % templates.length
     
     # set custom additional values
-    destination_network_name    = dialog_options["provider_#{index}_destination_network".to_sym]
-    destination_network_gateway = dialog_options["provider_#{index}_destination_network_gateway".to_sym]
-    domain_name                 = dialog_options["provider_#{index}_domain_name".to_sym]
+    destination_network_name    = dialog_options["location_#{index}_destination_network".to_sym]
+    destination_network_gateway = dialog_options["location_#{index}_destination_network_gateway".to_sym]
+    domain_name                 = dialog_options["location_#{index}_domain_name".to_sym]
     custom_additional_values[:destination_network]         = destination_network_name
     custom_additional_values[:destination_network_gateway] = destination_network_gateway
     custom_additional_values[:domain_name]                 = domain_name
     
     # handle cloud provider specific options
-    cloud_flavor_id  = dialog_options["provider_#{index}_cloud_flavor".to_sym]
-    cloud_ssh_key_id = dialog_options["provider_#{index}_cloud_ssh_key".to_sym]
+    cloud_flavor_id  = dialog_options["location_#{index}_cloud_flavor".to_sym]
+    cloud_ssh_key_id = dialog_options["location_#{index}_cloud_ssh_key".to_sym]
     custom_vm_fields[:instance_type]         = cloud_flavor_id  if !cloud_flavor_id.blank?
     custom_vm_fields[:guest_access_key_pair] = cloud_ssh_key_id if !cloud_ssh_key_id.blank?
     # TODO: figure out these parameters
     #custom_vm_fields[:security_groups]       = ???
     
     # create provision requests
-    provisioning_network_name = dialog_options["provider_#{index}_provisioning_network".to_sym]
+    provisioning_network_name = dialog_options["location_#{index}_provisioning_network".to_sym]
     new_provision_requests |= create_provision_requests(
                                 task,
                                 user,

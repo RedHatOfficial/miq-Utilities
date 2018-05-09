@@ -9,5 +9,5 @@ object:
     description: 
   fields:
   - execute:
-      value: "te\tget_networks(network_purpose => 'destination', destination_provider_index
-        => 3, required => 'false')"
+      value: get_networks(network_purpose => 'destination', destination_provider_index
+        => 3, required => 'false')
