@@ -9,6 +9,7 @@ object:
     scope: instance
     language: ruby
     location: inline
+    options: {}
   inputs:
   - field:
       aetype: 
@@ -18,6 +19,26 @@ object:
       priority: 1
       owner: 
       default_value: 
+      substitute: false
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: 
+      name: email_only_on_error
+      display_name: 
+      datatype: boolean
+      priority: 2
+      owner: 
+      default_value: 'true'
       substitute: false
       message: create
       visibility: 
