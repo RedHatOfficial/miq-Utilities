@@ -1,0 +1,13 @@
+---
+object_type: class
+version: 1.0
+object:
+  attributes:
+    description: Core standard library
+    display_name: Core
+    name: Core
+    type: 
+    inherits: 
+    visibility: 
+    owner: 
+  schema: []

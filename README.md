@@ -6,6 +6,7 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 * [Table of Contents](#table-of-contents)
 * [Features](#features)
 * [Automate](#automate)
+* [Automate StdLib](#automate_stdlib)
 * [Install](#install)
 * [Contributors](#contributors)
 
@@ -70,6 +71,15 @@ Instances where this domain overrides defaults provided in ManageIQ
   * Override to send email on error update
   * Override to be able to send email on any update
   * Override to collect Telemetry data on every invocation based on current step name and `ae_status_step`
+
+# Automate StdLib
+
+This namespace serves as a "standard library" of CloudForms (ManageIQ)
+Automation code. The goal is for common methods to be collected here,
+and to be suitbale for inclusion as "Embedded Methods".
+
+See: https://cloudformsblog.redhat.com/2018/04/17/embedded-methods/ for
+conceptual background.
 
 # Install
 0. Install dependencies
