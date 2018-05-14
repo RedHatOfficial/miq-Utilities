@@ -6,7 +6,7 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 * [Table of Contents](#table-of-contents)
 * [Features](#features)
 * [Automate](#automate)
-* [Automate StdLib](#automate_stdlib)
+* [Automate StdLib](#automate-stdlib)
 * [Install](#install)
 * [Contributors](#contributors)
 
