@@ -211,7 +211,11 @@ begin
   end
   
   # determine if the dialog element should be visible and required
-  visible_and_required = destination_provider_enabled && (required || selectable_networks.length > 1)
+  visible_and_required = destination_provider_enabled && (required || !selectable_networks.empty?)
+  $evm.log(:info, "selectable_networks          => #{selectable_networks}")          if @DEBUG
+  $evm.log(:info, "destination_provider_enabled => #{destination_provider_enabled}") if @DEBUG
+  $evm.log(:info, "required                     => #{required}")                     if @DEBUG
+  $evm.log(:info, "visible_and_required         => #{visible_and_required}")         if @DEBUG
   
   # return the dialog elemnt with the selectable networks
   return_dialog_element(visible_and_required, selectable_networks)
