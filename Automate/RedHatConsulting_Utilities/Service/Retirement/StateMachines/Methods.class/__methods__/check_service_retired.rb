@@ -19,7 +19,7 @@ service.service_resources.each do |sr|
   $evm.log(:info, "Resource <#{sr.name}> in Service <#{service.name}> is marked as Retired <#{sr.resource.retired?}> and has Retirment State of <#{sr.resource.retirement_state}>.")
   if sr.resource.retired?
     $evm.log('info', "resource: #{sr.resource.name} is already retired.")
-  elsif sr.resrouce.retirement_state == 'error'
+  elsif sr.resource.retirement_state == 'error'
     result = 'error'
     $evm.log(:error, "resource: #{sr.resource.name} had error retiring.")
   else
