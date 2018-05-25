@@ -150,10 +150,19 @@ NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
 def get_network_configuration(network_name)
   if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
     begin
-      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{network_name}")
-    rescue => e
+      escaped_network_name                  = network_name.gsub(/[^a-zA-Z0-9_\.\-]/, '_')
+      $evm.log(:info, "escaped_network_name => #{escaped_network_name}") if @DEBUG
+      network_configuration                 = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
+      
+      if !network_configuration.blank? && !network_configuration['network_address_space'].blank?
+        @network_configurations[network_name] = network_configuration
+      else
+        @missing_network_configurations[network_name] = "WARN: No network configuration exists"
+        $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
+      end
+    rescue
       @missing_network_configurations[network_name] = "WARN: No network configuration exists"
-      $evm.log(:warn, "No network configuration for Network <#{network_name}> exists")
+      $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
     end
   end
   return @network_configurations[network_name]
