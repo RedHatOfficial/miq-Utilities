@@ -147,6 +147,8 @@ def get_vm_and_options()
   # standerdize the option keys
   options = options.symbolize_keys()
   
+  $evm.log(:info, "vm      => #{vm}") if @DEBUG
+  $evm.log(:info, "options => #{options}") if @DEBUG
   return vm,options
 end
 
@@ -167,6 +169,11 @@ def get_network_configuration(network_name)
     begin
       escaped_network_name                  = network_name.gsub(/[^a-zA-Z0-9_\.\-]/, '_')
       @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
+      
+      if escaped_network_name =~ /^dvs_/ && @network_configurations[network_name]['network_address_space'].blank?
+        escaped_network_name                  = escaped_network_name[/^dvs_(.*)/, 1]
+        @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
+      end
     rescue
       @missing_network_configurations[network_name] = "WARN: No network configuration exists"
       $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
@@ -179,7 +186,7 @@ begin
   vm,options = get_vm_and_options()
   
   network_name_parameter_name = get_param(:network_name_parameter_name)
-  network_name                = get_param(network_name_parameter_name) || get_param("dialog_#{network_name_parameter_name}")
+  network_name                = get_param(network_name_parameter_name) || get_param("dialog_#{network_name_parameter_name}") || options[network_name_parameter_name.to_sym] || options["dialog_#{network_name_parameter_name}".to_sym]
   
   if !network_name.blank?
     network_configuration       = get_network_configuration(network_name)
