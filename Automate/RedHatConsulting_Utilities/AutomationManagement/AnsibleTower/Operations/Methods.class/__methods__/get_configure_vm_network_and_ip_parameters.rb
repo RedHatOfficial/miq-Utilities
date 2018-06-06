@@ -217,6 +217,18 @@ begin
   end
   
   # set required job parameters
-  job_parameters.each { |k,v| $evm.object[k.to_s] = v; $evm.root[k.to_s] = v }
+  miq_provision = $evm.root['miq_provision']
+  job_parameters.each do |k,v|
+    $evm.object[k.to_s] = v
+    $evm.root[k.to_s]   = v
+    miq_provision.set_option(k.to_s,v) if miq_provision
+  end
+  job_parameters.each_with_index do |value, index|
+    key = value[0].to_s.match(/dialog_param_(.*)/)[1]
+    $evm.object["param#{index+1}"] = "#{key}=#{value[1]}"
+  end
+  
   $evm.log(:info, "Set Ansible Tower Job Parameters: #{job_parameters}")
+  dump_root()    if @DEBUG
+  dump_current() if @DEBUG
 end
