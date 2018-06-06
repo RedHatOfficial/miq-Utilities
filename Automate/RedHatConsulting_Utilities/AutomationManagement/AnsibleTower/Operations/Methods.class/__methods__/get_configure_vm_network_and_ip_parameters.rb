@@ -180,8 +180,8 @@ begin
   $evm.log(:info, "network_address_space => #{network_address_space}") if @DEBUG
 
   # get other required options
-  destination_ip              = options[:destination_ip_address] || options[:dialog_destination_ip_address] || get_param(:destination_ip_address)
-  error("One of <destination_ip, dialog_destination_ip_address> must be provided.") if destination_ip.blank?
+  destination_ip = options[:destination_ip_address] || options[:dialog_destination_ip_address] || get_param(:destination_ip_address)
+  error("One of <destination_ip_address, dialog_destination_ip_address> must be provided.") if destination_ip.blank?
 
   # determine network gateway
   destination_network_gateway = options[:destination_network_gateway] || options[:dialog_destination_network_gateway] || get_param(:destination_network_gateway)
