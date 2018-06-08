@@ -491,3 +491,23 @@ object:
       on_error: 
       max_retries: 
       max_time: 
+  - field:
+      aetype: state
+      name: Finish
+      display_name: 
+      datatype: string
+      priority: 25
+      owner: 
+      default_value: 
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
