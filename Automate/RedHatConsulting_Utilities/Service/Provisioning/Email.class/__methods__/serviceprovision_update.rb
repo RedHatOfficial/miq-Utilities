@@ -225,13 +225,15 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
   $evm.log(:info, "request_tasks => #{request_tasks}") if @DEBUG
   
   # check for any other provision request ids set on the parent task and get those child request tasks  
-  additional_vm_provision_request_ids   = service_task.get_option(:provision_request_ids) || {}
-  additional_vm_provision_request_ids   = additional_vm_provision_request_ids.values
-  additional_vm_provision_requests      = additional_vm_provision_request_ids.collect { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id) }
-  request_tasks                        += additional_vm_provision_requests.collect { |vm_provision_request| vm_provision_request.miq_request_tasks }.flatten
-  $evm.log(:info, "additional_vm_provision_request_ids => #{additional_vm_provision_request_ids}")   if @DEBUG
-  $evm.log(:info, "additional_vm_provision_requests    => #{additional_vm_provision_requests}")      if @DEBUG
-  $evm.log(:info, "updated request_tasks               => #{request_tasks}")              if @DEBUG
+  if !service_task.nil?
+    additional_vm_provision_request_ids  = service_task.get_option(:provision_request_ids) || {}
+    additional_vm_provision_request_ids  = additional_vm_provision_request_ids.values
+    additional_vm_provision_requests     = additional_vm_provision_request_ids.collect { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id) }
+    request_tasks                       += additional_vm_provision_requests.collect { |vm_provision_request| vm_provision_request.miq_request_tasks }.flatten
+    $evm.log(:info, "additional_vm_provision_request_ids => #{additional_vm_provision_request_ids}") if @DEBUG
+    $evm.log(:info, "additional_vm_provision_requests    => #{additional_vm_provision_requests}")    if @DEBUG
+    $evm.log(:info, "updated request_tasks               => #{request_tasks}")                       if @DEBUG
+  end
   
   # filter down to only the template request tasks
   vm_tasks = request_tasks.select { |task| task.request_type == 'template' }
