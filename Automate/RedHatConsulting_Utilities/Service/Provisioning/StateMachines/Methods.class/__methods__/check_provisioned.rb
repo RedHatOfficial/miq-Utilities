@@ -29,11 +29,20 @@ if result == 'ok' || result == 'retry'
   # check for any provision requests set and wait for those to finish
   provision_request_ids = task.get_option(:provision_request_ids) || {}
   provision_request_ids = provision_request_ids.values
+  provision_requests    = provision_request_ids.collect { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id) }
+
   $evm.log(:info, "provision_request_ids => #{provision_request_ids}") if @DEBUG
   $evm.log(:info, "Child provision requests states <#{provision_request_ids.collect { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id).state }}>") if @DEBUG
-  if provision_request_ids.any? { |provision_request_id| $evm.vmdb('miq_request').find_by_id(provision_request_id).state != 'finished' }
+  if provision_requests.any? { |provision_request| provision_request.state != 'finished' }
     new_result = 'retry'
     $evm.log('info', "Child provision requests not finished. Setting restult <#{result}> for task: #{task.id} ")
+  end
+  
+  # if any child task has a state of error set the state of the service provision task to error
+  provision_request_tasks = provision_requests.collect { |provision_request| provision_request.miq_request_tasks }.flatten
+  if provision_request_tasks.any? { |provision_request_task| provision_request_task.statemachine_task_status == 'error' }
+    task.object_send(:update_and_notify_parent, :state => task.state, :status => "Error", :message => "Error: Child provison request had an error.")
+    $evm.log('info', "Child provision request had an error. Setting state of service provision task to error.")
   end
   
   result = new_result
