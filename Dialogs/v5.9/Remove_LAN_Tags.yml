@@ -30,7 +30,7 @@
         required_method: 
         required_method_options: {}
         default_value: 
-        values: []
+        values: 
         values_method: 
         values_method_options: {}
         options:
@@ -39,10 +39,10 @@
         position: 0
         validator_type: 
         validator_rule: 
-        reconfigurable: 
+        reconfigurable: false
         dynamic: true
-        show_refresh_button: 
-        load_values_on_init: 
+        show_refresh_button: false
+        load_values_on_init: false
         read_only: false
         auto_refresh: 
         trigger_auto_refresh: true
@@ -50,7 +50,7 @@
         resource_action:
           action: 
           resource_type: DialogField
-          ae_namespace: Infrastructure
+          ae_namespace: Infrastructure/Network
           ae_class: DynamicDialogs
           ae_instance: get_lans_by_name
           ae_message: 
@@ -75,7 +75,7 @@
         required_method: 
         required_method_options: {}
         default_value: 
-        values: []
+        values: 
         values_method: 
         values_method_options: {}
         options:
@@ -86,8 +86,8 @@
         validator_rule: 
         reconfigurable: 
         dynamic: true
-        show_refresh_button: 
-        load_values_on_init: 
+        show_refresh_button: false
+        load_values_on_init: false
         read_only: false
         auto_refresh: 
         trigger_auto_refresh: true
@@ -113,7 +113,7 @@
         required_method: 
         required_method_options: {}
         default_value: 
-        values: []
+        values: 
         values_method: 
         values_method_options: {}
         options:
@@ -124,8 +124,8 @@
         validator_rule: 
         reconfigurable: 
         dynamic: true
-        show_refresh_button: 
-        load_values_on_init: 
+        show_refresh_button: false
+        load_values_on_init: false
         read_only: false
         auto_refresh: true
         trigger_auto_refresh: false
@@ -158,7 +158,7 @@
         required_method: 
         required_method_options: {}
         default_value: ''
-        values: []
+        values: 
         values_method: 
         values_method_options: {}
         options:
@@ -167,9 +167,9 @@
         position: 0
         validator_type: 
         validator_rule: 
-        reconfigurable: 
+        reconfigurable: false
         dynamic: true
-        show_refresh_button: 
+        show_refresh_button: false
         load_values_on_init: 
         read_only: true
         auto_refresh: true
@@ -178,7 +178,7 @@
         resource_action:
           action: 
           resource_type: DialogField
-          ae_namespace: Infrastructure
+          ae_namespace: Infrastructure/Network
           ae_class: DynamicDialogs
           ae_instance: get_existing_tags_on_selected_lans_shared_only
           ae_message: 
@@ -196,7 +196,7 @@
         required_method: 
         required_method_options: {}
         default_value: ''
-        values: []
+        values: 
         values_method: 
         values_method_options: {}
         options:
@@ -205,9 +205,9 @@
         position: 1
         validator_type: 
         validator_rule: 
-        reconfigurable: 
+        reconfigurable: false
         dynamic: true
-        show_refresh_button: 
+        show_refresh_button: false
         load_values_on_init: 
         read_only: true
         auto_refresh: true
@@ -216,7 +216,7 @@
         resource_action:
           action: 
           resource_type: DialogField
-          ae_namespace: Infrastructure
+          ae_namespace: Infrastructure/Network
           ae_class: DynamicDialogs
           ae_instance: get_all_existing_tags_on_selected_lans
           ae_message: 
