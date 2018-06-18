@@ -1,0 +1,66 @@
+---
+:custom_buttons_sets:
+- name: Tagging|Host|
+  description: Additional tagging operations
+  set_type: CustomButtonSet
+  read_only: 
+  mode: 
+  custom_buttons:
+  - description: Add tags to LANs from selected objects
+    applies_to_class: Host
+    options:
+      :button_icon: fa fa-plus-circle
+      :button_type: default
+      :display: true
+      :open_url: false
+      :display_for: single
+      :submit_how: one
+    userid: itewk
+    wait_for_complete: 
+    name: Add Tags to LANs
+    visibility:
+      :roles:
+      - _ALL_
+    applies_to_id: 
+    resource_actions:
+      action: 
+      ae_namespace: SYSTEM
+      ae_class: PROCESS
+      ae_instance: Request
+      ae_message: 
+      ae_attributes:
+        request: Add_Tags_to_LANs
+      dialog_label: Add LAN Tags
+  - description: Remove tags from LANs from selected objects
+    applies_to_class: Host
+    options:
+      :button_icon: fa fa-minus-circle
+      :button_type: default
+      :display: true
+      :open_url: false
+      :display_for: single
+      :submit_how: one
+    userid: itewk
+    wait_for_complete: 
+    name: Remove Tags from LANs
+    visibility:
+      :roles:
+      - _ALL_
+    applies_to_id: 
+    resource_actions:
+      action: 
+      ae_namespace: SYSTEM
+      ae_class: PROCESS
+      ae_instance: Request
+      ae_message: 
+      ae_attributes:
+        request: Remove_Tags_from_LANs
+      dialog_label: Remove LAN Tags
+  set_data:
+    :button_order:
+    - Add Tags to LANs
+    - Remove Tags from LANs
+    :button_image: 4
+    :display: true
+    :group_index: 2
+    :button_icon: fa fa-tags
