@@ -118,6 +118,8 @@ begin
   # If no tagged DRS clusters search hosts
   # else tagged DRS clusters, pick one at random
   if drs_clusters.length.zero?
+    $evm.log(:info, "No correctly tagged DRS clusters. Select non-DRS cluster")
+    
     #############################
     # No DRS cluster found - try hosts
     #############################
@@ -165,6 +167,8 @@ begin
     sort_data.sort! { |a, b| a[0] <=> b[0] }
     hosts = sort_data.collect { |sd| sd.pop }
   else
+    $evm.log(:info, "Select DRS cluster")
+    
     #############################
     # Tagged DRS cluster found - pick one at random
     #############################
@@ -174,8 +178,13 @@ begin
     # associated storage tagged with Multi Host Access
     #
     # NOTE: in the case of using a tagged DRS cluster host tags are ignored since VMware will choose the host
-    hosts = [cluster.hosts.sample]
+    powered_on_hosts = cluster.hosts.select { |host| host.power_state == "on" }
+    $evm.log("info", "Randomly select a powered on host from DRS cluster to use to determine storage options. " +
+                     "Cluster hosts (powered on): <#{powered_on_hosts.collect { |host| host.name } }>")
+    hosts = [powered_on_hosts.sample]
   end
+  $evm.log("info", "Selected Cluster: <#{cluster.name}>")
+  $evm.log("info", "Selected Hosts: <#{hosts.collect { |host| host.name } }>")
   
   #############################
   # Set storage sort order here
@@ -270,6 +279,7 @@ begin
       # Sort storage to determine target datastore
       #############################
       sort_data = []
+      $evm.log("info", "Filtered Storage Options: <#{storages}>") if @DEBUG
       storages.each_with_index do |s, idx|
         sort_data << sd = [[], s.name, idx]
         storage_id = s.attributes['id'].to_i
@@ -293,10 +303,15 @@ begin
       sort_data.sort! { |a, b| a[0] <=> b[0] }
       $evm.log("info", "Sorted storage Order:<#{STORAGE_SORT_ORDER.inspect}>  Results:<#{sort_data.inspect}>")
       selected_storage = sort_data.first
+      $evm.log("info", "Selected Storage: <#{selected_storage}>")
       unless selected_storage.nil?
         selected_idx = selected_storage.last
         storage = storages[selected_idx]
         host    = h
+        
+        $evm.log("info", "Selected Storage Index: <#{selected_idx}>") if @DEBUG
+        $evm.log("info", "Selected Storage: <#{storage}>")
+        $evm.log("info", "Selected Host: <#{host}>")
       end
   
       # Stop checking if we have found both host and storage
