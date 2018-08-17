@@ -1,0 +1,22 @@
+---
+object_type: instance
+version: 1.0
+object:
+  attributes:
+    display_name: 
+    name: Email
+    inherits: 
+    description: 
+  fields:
+  - to_email_address:
+      value: cf_user@example.com
+  - cc_email_address:
+      value: cf_manager@example.com
+  - from_email_address:
+      value: cf_admin@example.com
+  - signature:
+      value: The Virtualization Team
+  - smtp_relay:
+      value: localhost
+  - smtp_port:
+      value: '25'
