@@ -36,6 +36,14 @@ module RedHatConsulting_Utilities
         %w(root object parent).each do |thing|
           dump_thing(thing) if @handle.send(thing) rescue nil
         end
+
+      end
+
+      def error(msg)
+        @handle.log(:error, msg)
+        @handle.root['ae_result'] = 'error'
+        @handle.root['ae_reason'] = msg.to_s
+        exit MIQ_STOP
       end
 
       def get_provider(provider_id = nil)
@@ -53,6 +61,14 @@ module RedHatConsulting_Utilities
           log(:info, "Found amazon: #{provider.name} via default method") if provider && use_default
         end
         provider ? (return provider) : (return nil)
+      end
+
+      def set_complex_state_var(name, value)
+        @handle.set_state_var(name.to_sym, JSON.generate(value))
+      end
+
+      def get_complex_state_var(name)
+        JSON.parse(@handle.get_state_var(name.to_sym))
       end
 
       # Useful in the rescue of service provisioning methods.

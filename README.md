@@ -8,6 +8,7 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 * [Automate](#automate)
 * [Automate StdLib](#automate-stdlib)
 * [Install](#install)
+* [Unit Testing](#unittesting)
 * [Contributors](#contributors)
 
 # Features
@@ -89,3 +90,19 @@ conceptual background.
 4. Submit
 5. Select Branch/Tag to synchronize with
 6. Submit
+
+# Unit Testing
+To run the test suite, you first require a functional ManageIQ
+development environment, specifically, able to run the test suite of
+https://github.com/ManageIQ/manageiq-content/ . Link in this project
+to that, per
+
+manageiq-content/content/automate/RedHatConsulting_Utilities -> miq-Utilities/Automate/RedHatConsulting_Utilities
+manageiq-content/spec/content/automate/RedHatConsulting_Utilities -> miq-Utilities/UnitTests/spec/content/RedHatConsulting_Utilities
+manageiq-content/spec/factories/RedHatConsulting_Utilities -> miq-Utilities/UnitTests/spec/factories/RedHatConsulting_Utilities
+
+and then run
+$ bundle exec rake
+or, e.g.,
+$ bundle exec rspec --format documentation --pattern spec/content/automate/RedHatConsulting_Utilities/**/*_spec.rb
+
