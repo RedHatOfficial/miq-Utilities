@@ -18,7 +18,7 @@ module RedHatConsulting_Utilities
       def dump_thing(thing)
         log(:info, "Begin @handle.#{thing}.attributes")
         @handle.send(thing).attributes.sort.each { |k, v|
-          log(:info, "\t Attribute: #{k} = #{v}")
+          log(:info, "\t Attribute: #{k} = #{v.inspect}")
         }
         log(:info, "End @handle.#{thing}.attributes")
         log(:info, "")
