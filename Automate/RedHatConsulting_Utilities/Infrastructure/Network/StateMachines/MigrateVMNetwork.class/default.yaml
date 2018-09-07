@@ -14,4 +14,4 @@ object:
       value: "/Infrastructure/Network/Operations/Methods/AcquireIPAddress?network_name_parameter_name=destination_network"
       collect: "/destination_ip_address = acquired_ip_address"
   - ConfigureVMNetworkAndIP:
-      value: "/AutomationManagement/AnsibleTower/Operations/JobTemplateWithDynamicParams/ConfigureVMNetworkAndIP"
+      value: "/AutomationManagement/AnsibleTower/Operations/JobTemplate/ConfigureVMNetworkAndIP"
