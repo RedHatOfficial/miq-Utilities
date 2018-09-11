@@ -1,0 +1,13 @@
+# No onn has ever used punch cards to program Ruby
+Metrics/LineLength:
+  Max: 130
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+# Flat out wrong. RuboCop should encourage yoda conditions so accidents fail when assigning to constants
+Style/YodaCondition:
+  Enabled: false
+
+Naming/ClassAndModuleCamelCase:
+  Enabled: false
