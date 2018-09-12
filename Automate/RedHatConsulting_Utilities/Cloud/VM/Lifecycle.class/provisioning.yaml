@@ -12,6 +12,6 @@ object:
       value: "/System/CommonMethods/StateMachineMethods/get_request_type"
       collect: "/request_type = request_type"
   - Relationship5:
-      value: "/Cloud/VM/requesting/Profile/${/#user.normalized_ldap_group}#get_state_machine"
+      value: "/Cloud/VM/Provisioning/Profile/${/#user.normalized_ldap_group}#get_state_machine"
   - Relationship6:
       value: "/Cloud/VM/Provisioning/StateMachines/${/#state_machine}/${/#request_type}"
