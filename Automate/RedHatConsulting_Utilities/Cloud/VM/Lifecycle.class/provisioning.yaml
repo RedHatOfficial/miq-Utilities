@@ -9,9 +9,9 @@ object:
     description: 
   fields:
   - Relationship2:
-      value: "/System/CommonMethods/StateMachineMethods/get_provision_type"
-      collect: "/provision_type = provision_type"
+      value: "/System/CommonMethods/StateMachineMethods/get_request_type"
+      collect: "/request_type = request_type"
   - Relationship5:
       value: "/Cloud/VM/Provisioning/Profile/${/#user.normalized_ldap_group}#get_state_machine"
   - Relationship6:
-      value: "/Cloud/VM/Provisioning/StateMachines/${/#state_machine}/${/#provision_type}"
+      value: "/Cloud/VM/Provisioning/StateMachines/${/#state_machine}/${/#request_type}"

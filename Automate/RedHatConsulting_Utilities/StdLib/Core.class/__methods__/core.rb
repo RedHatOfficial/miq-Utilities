@@ -36,7 +36,19 @@ module RedHatConsulting_Utilities
         %w(root object parent).each do |thing|
           dump_thing(thing) if @handle.send(thing) rescue nil
         end
+      end
 
+      # Logs all the attributes from a given attribute on $evm.root
+      #
+      # @param root_attribute Attribute on $evm.root to log all of the attributes for
+      def dump_root_attribute(root_attribute)
+        dump_thing_attribute(@handle.root, '@handle.root', root_attribute)
+      end
+
+      def dump_thing_attribute(thing, thing_name, attribute)
+        log(:info, "#{thing_name}['#{attribute}'].attributes => {")
+        thing[attribute].attributes.sort.each { |k, v| log(:info, "\t#{k} => #{v.inspect}") }
+        log(:info, '}')
       end
 
       def error(msg)

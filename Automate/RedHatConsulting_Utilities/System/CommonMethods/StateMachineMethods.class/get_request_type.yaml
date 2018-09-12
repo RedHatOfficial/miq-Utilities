@@ -4,10 +4,9 @@ version: 1.0
 object:
   attributes:
     display_name: 
-    name: get_provision_type
+    name: get_request_type
     inherits: 
     description: 
   fields:
   - execute:
-      value: get_provision_type
-      collect: "/provision_type = provision_type"
+      value: get_request_type
