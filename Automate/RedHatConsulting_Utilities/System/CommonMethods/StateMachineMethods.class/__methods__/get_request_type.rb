@@ -12,7 +12,7 @@
 #     request_type - Provision type to use in the VMProvision_*/* state machine
 #
 
-module RhcMiqQuickstart
+module RedHatConsulting_Utilities
   module Automate
     module System
       module CommonMethods
@@ -58,5 +58,5 @@ module RhcMiqQuickstart
 end
 
 if __FILE__ == $PROGRAM_NAME
-  RhcMiqQuickstart::Automate::System::CommonMethods::StateMachineMethods::GetRequestType.new.main()
+  RedHatConsulting_Utilities::Automate::System::CommonMethods::StateMachineMethods::GetRequestType.new.main()
 end

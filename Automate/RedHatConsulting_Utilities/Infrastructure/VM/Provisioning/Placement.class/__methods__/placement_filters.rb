@@ -8,40 +8,55 @@
 # SETS
 #   EVM OBJECT
 #     'placement_filters' - Hash of tag names to values that must exist for a resource to be selected in the placement process
-@DEBUG = false
 
-# IMPLEMENTERS: Update with business logic
-# @return hash of tags to values
-def get_placement_filters
-  prov = $evm.root["miq_provision"]
-  user = prov.miq_request.requester
-  error("User not specified") if user.nil?
-  normalized_ldap_group = user.normalized_ldap_group.gsub(/\W/,'_')
+module RedHatConsulting_Utilities
+  module Automate
+    module Infrastructure
+      module VM
+        module Provisioning
+          module Placement
+            class PlacementFilters
+              include RedHatConsulting_Utilities::StdLib::Core
 
-  #By default, look for either prov_scope all or equal to the requesting user's ldap group
-  filters = {"prov_scope"=>["all",normalized_ldap_group]}
-  
-  return filters
+              def initialize(handle = $evm)
+                @handle = handle
+                @DEBUG = true
+              end
+
+              # IMPLEMENTERS: DO NOT MODIFY
+              #
+              # Set the filters on $evm.object
+              def main
+                filters = placement_filters
+                log(:info, "Setting placement filters to: <#{filters}>") if @DEBUG
+
+                @handle.object['placement_filters'] = filters
+              end
+
+              # IMPLEMENTERS: Update with business logic
+              # @return hash of tags to values
+              def placement_filters
+                prov = @handle.root["miq_provision"]
+                user = prov.miq_request.requester
+                error('User not specified') if user.nil?
+                normalized_ldap_group = user.normalized_ldap_group.gsub(/\W/, '_')
+
+                # By default, look for either prov_scope all or equal to the requesting user's ldap group
+                filters = {
+                  prov_scope: ['all', normalized_ldap_group],
+                  # category: ['array', 'of', 'values'],
+                }
+
+                filters
+              end
+
+            end
+          end
+        end
+      end
+    end
+  end
 end
-
-# IMPLEMENTERS: DO NOT MODIFY
-#
-# Log an error and exit.
-#
-# @param msg Message to error with
-def error(msg)
-  $evm.log(:error, msg)
-  $evm.root['ae_result'] = 'error'
-  $evm.root['ae_reason'] = msg.to_s
-  exit MIQ_STOP
-end
-
-# IMPLEMENTERS: DO NOT MODIFY
-#
-# Set the filters on $evm.object
-begin
-  placement_filters = get_placement_filters
-  $evm.log(:info, "Setting placement filters to "+placement_filters.to_s) if @DEBUG    
-  
-  $evm.object['placement_filters'] = placement_filters
+if __FILE__ == $PROGRAM_NAME
+  RedHatConsulting_Utilities::Automate::Infrastructure::VM::Provisioning::Placement::PlacementFilters.new.main()
 end

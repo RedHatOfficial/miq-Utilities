@@ -4,9 +4,11 @@ version: 1.0
 object:
   attributes:
     name: redhat_best_placement_with_scope
-    display_name: 
-    description: 
+    display_name:
+    description:
     scope: instance
     language: ruby
     location: inline
+    embedded_methods:
+    - "/StdLib/Core/Core"
   inputs: []

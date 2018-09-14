@@ -52,9 +52,7 @@ module RedHatConsulting_Utilities
                 # Default is to look for Hosts and Datastores tagged with prov_scope = All or match to Group
                 # This behavior can be overridden by modifying the hash returned in get_placement_filters
                 tags = get_param(:placement_filters)
-                log(:info, 'Additional placement filters: ' + tags.to_s) if @DEBUG
-
-                log(:info, 'Tags: ' + tags.to_s)
+                log(:info, "Additional placement filters: <#{tags}>") if @DEBUG
 
                 log(:info, "VM=<#{vm.name}>, Space Required=<#{vm.provisioned_storage}>, " \
                   "placement filters=<#{tags}>")
