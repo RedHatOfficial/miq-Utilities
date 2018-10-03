@@ -47,7 +47,11 @@ module RedHatConsulting_Utilities
 
       def dump_thing_attribute(thing, thing_name, attribute)
         log(:info, "#{thing_name}['#{attribute}'].attributes => {")
-        thing[attribute].attributes.sort.each { |k, v| log(:info, "\t#{k} => #{v.inspect}") }
+        if thing[attribute].attributes.try(:sort)
+          thing[attribute].attributes.sort.each { |k, v| log(:info, "\t#{k} => #{v.inspect}") }
+        else
+          log(:info, '<un-dumpable object>')
+        end
         log(:info, '}')
       end
 
