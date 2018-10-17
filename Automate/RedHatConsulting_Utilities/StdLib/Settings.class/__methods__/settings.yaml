@@ -1,0 +1,13 @@
+---
+object_type: method
+version: 1.0
+object:
+  attributes:
+    name: Settings
+    display_name: Settings
+    description: 
+    scope: instance
+    language: ruby
+    location: inline
+    options: {}
+  inputs: []

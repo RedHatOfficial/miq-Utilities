@@ -1,0 +1,13 @@
+---
+object_type: class
+version: 1.0
+object:
+  attributes:
+    description: 
+    display_name: Settings
+    name: Settings
+    type: 
+    inherits: 
+    visibility: 
+    owner: 
+  schema: []
