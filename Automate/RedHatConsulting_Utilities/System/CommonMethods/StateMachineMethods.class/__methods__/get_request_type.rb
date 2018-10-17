@@ -22,7 +22,7 @@ module RedHatConsulting_Utilities
 
             def initialize(handle = $evm)
               @handle = handle
-              @DEBUG = true
+              @DEBUG = false
             end
 
             def main

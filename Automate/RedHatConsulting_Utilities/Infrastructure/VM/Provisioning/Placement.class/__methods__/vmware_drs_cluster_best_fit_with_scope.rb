@@ -308,16 +308,16 @@ module RedHatConsulting_Utilities
                 # If selected by DRS cluster
                 # else if selected by host
                 if cluster
-                  log(:info, "Selected Cluster: <#{cluster.nil? ? 'nil' : cluster.name}>")
+                  log(:info, "Selected Cluster: <#{cluster.nil? ? 'nil' : cluster.name}>. Will set_cluster()")
                   obj['ems_cluster'] = cluster
                   prov.set_cluster(cluster)
                 elsif host
-                  log(:info, "Selected Host: <#{host.nil? ? 'nil' : host.name}>")
+                  log(:info, "Selected Host: <#{host.nil? ? 'nil' : host.name}> Will set_host()")
                   obj['host'] = host
                   prov.set_host(host)
                 end
 
-                log(:info, "Selected Datastore: <#{storage.nil? ? 'nil' : storage.name}>")
+                log(:info, "Selected Datastore: <#{storage.nil? ? 'nil' : storage.name}> Will set_storage()")
                 if storage
                   obj['storage'] = storage
                   prov.set_storage(storage)
