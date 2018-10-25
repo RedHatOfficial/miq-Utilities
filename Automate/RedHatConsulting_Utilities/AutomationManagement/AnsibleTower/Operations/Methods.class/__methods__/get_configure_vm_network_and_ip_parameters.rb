@@ -178,18 +178,23 @@ begin
   vm,options = get_vm_and_options()
   
   # get destination network information
-  network_name          = options[:destination_network] || options[:dialog_destination_network] || get_param(:destination_network)
-  network               = $evm.vmdb(:lan).find_by_name(network_name) if !network_name.blank?
-  network_configuration = get_network_configuration(network_name)
+  # this network name may not actually be the name of the network on the host the VM is on, it could be a pattern that matches one of the networks on the host
+  network_configuration_name = options[:destination_network] || options[:dialog_destination_network] || get_param(:destination_network)
+  error("Option <destination_network> must be provided") if network_configuration_name.blank?
+  
+  # determine the host network based on the network name
+  network = vm.host.lans.find { |lan| lan.name =~ /#{network_configuration_name}/ }
+  error("Could not find Network on Host <#{vm.host.name}> that matches the pattern <#{network_configuration_name}>") if network.blank?
+ 
+  # determine the network configuration
+  network_configuration = get_network_configuration(network_configuration_name)
   network_address_space = network_configuration['network_address_space']
-  error("Option <network_name> must be provided")                                                          if network_name.blank?
-  error("Could not find Network <#{network_name}>")                                                        if network.blank?
-  error("Could not find Network configuration for Network <#{network_name}>")                              if network_configuration.blank?
+  error("Could not find Network configuration for Network <#{network_configuration_name}>")                if network_configuration.blank?
   error("Network configuration <#{network_configuration}> must contain <network_address_space> parameter") if network_address_space.blank?
-  $evm.log(:info, "network_name          => #{network_name}")          if @DEBUG
-  $evm.log(:info, "network               => #{network}")               if @DEBUG
-  $evm.log(:info, "network_configuration => #{network_configuration}") if @DEBUG
-  $evm.log(:info, "network_address_space => #{network_address_space}") if @DEBUG
+  $evm.log(:info, "network_configuration_name => #{network_configuration_name}") if @DEBUG
+  $evm.log(:info, "network                    => #{network}")                    if @DEBUG
+  $evm.log(:info, "network_configuration      => #{network_configuration}")      if @DEBUG
+  $evm.log(:info, "network_address_space      => #{network_address_space}")      if @DEBUG
 
   # get destination IP address
   #
@@ -212,7 +217,7 @@ begin
     :dialog_param_vm_network_ip4_netmask_prefix => network_address_space.match(/[0-9\.]+\/([0-9]+)/)[1].to_i,
     :dialog_param_vm_network_gw4                => destination_network_gateway,
     :dialog_param_vm_network_dns4               => network_configuration['network_nameservers'].nil? ? nil : network_configuration['network_nameservers'].join(','),
-    :dialog_param_virt_network                  => network_name
+    :dialog_param_virt_network                  => network.name
   }
   case vm.vendor
     when 'vmware'

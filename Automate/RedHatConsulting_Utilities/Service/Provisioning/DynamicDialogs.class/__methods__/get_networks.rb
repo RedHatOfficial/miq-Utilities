@@ -74,37 +74,15 @@ def get_param(param)
   return param_value
 end
 
-# Get the network configuration for a given network
+# Get all of the network configuration instances.
 #
-# @param network_name Name of the network to get the configuraiton for
-# @return Hash Configuration information about the given network
-#                network_purpose
-#                network_address_space
-#                network_gateway
-#                network_nameservers
-#                network_ddi_provider
-@network_configurations         = {}
-@missing_network_configurations = {}
-NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
-def get_network_configuration(network_name)
-  if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
-    begin
-      escaped_network_name                  = network_name.gsub(/[^a-zA-Z0-9_\.\-]/, '_')
-      $evm.log(:info, "escaped_network_name => #{escaped_network_name}") if @DEBUG
-      network_configuration                 = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
-      
-      if !network_configuration.blank? && !network_configuration['network_address_space'].blank?
-        @network_configurations[network_name] = network_configuration
-      else
-        @missing_network_configurations[network_name] = "WARN: No network configuration exists"
-        $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
-      end
-    rescue
-      @missing_network_configurations[network_name] = "WARN: No network configuration exists"
-      $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
-    end
-  end
-  return @network_configurations[network_name]
+# @return Array of all of the network configuration instances
+NETWORK_CONFIGURATION_URI = 'Infrastructure/Network/Configuration'.freeze
+def get_network_configurations()
+  network_instances = $evm.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") }
+  network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten]
+  
+  return network_instances
 end
 
 # @param visible_and_required Boolean true if the dialog element is visible and required, false if hidden
@@ -151,7 +129,7 @@ begin
   destination_provider_enabled &= destination_templates.length > destination_provider_index
   return_dialog_element(false, selectable_networks) if !destination_provider_enabled
   
-  # determine if provider is a cloud provider
+  # determine provider
   destination_provider_name = destination_templates[destination_provider_index][:provider]
   destination_provider      = $evm.vmdb(:ems).find_by_name(destination_provider_name)
   $evm.log(:info, "destination_provider_name => #{destination_provider_name}") if @DEBUG
@@ -160,44 +138,38 @@ begin
   # collect host based networks
   all_host_networks = []
   destination_provider.hosts.each do |host|
-    # find all the host destination networks
-    host_networks = []
-    host.lans.each do |lan|
-      network_configuraiton = get_network_configuration(lan.name)
-      $evm.log(:info, "network_configuraiton['network_purpose'] => #{network_configuraiton.blank? ? nil : network_configuraiton['network_purpose']}") if @DEBUG
-      host_networks << lan if !network_configuraiton.blank? && (network_configuraiton['network_purpose'].include?(network_purpose))
-    end
-
-    all_host_networks << host_networks.collect { |lan| lan.name }
+    all_host_networks << host.lans.collect { |lan| lan.name }
   end
   $evm.log(:info, "all_host_networks => #{all_host_networks}") if @DEBUG
-  # `inject(:&) does an `&` opertion on all elements of the array, thus doing an intersection
-  intersection_of_host_networks = all_host_networks.inject(:&)
-  $evm.log(:info, "intersection_of_host_networks => #{intersection_of_host_networks}") if @DEBUG
-    
+  # `inject(:|) does an `|` opertion on all elements of the array, thus doing a union
+  union_of_host_networks = all_host_networks.inject(:|)
+  $evm.log(:info, "union_of_host_networks => #{union_of_host_networks}") if @DEBUG
+  
   # collect cloud based networks
   all_cloud_networks = []
   if destination_provider.respond_to?(:network_manager)
-    destination_provider.network_manager.cloud_subnets.each do |cloud_subnet|
-      network_configuraiton = get_network_configuration(cloud_subnet.name)
-      $evm.log(:info, "network_configuraiton['network_purpose'] => #{network_configuraiton.blank? ? nil : network_configuraiton['network_purpose']}") if @DEBUG
-      all_cloud_networks << cloud_subnet.name if !network_configuraiton.blank? && (network_configuraiton['network_purpose'].include?(network_purpose))
-    end
+    all_cloud_networks << destination_provider.network_manager.cloud_subnets.collect { |cloud_subnet| cloud_subnet.name }
   end
   $evm.log(:info, "all_cloud_networks => #{all_cloud_networks}") if @DEBUG
 
   # determine the destination networks shared by all hosts on the selected destination provide
   all_networks  = []
-  all_networks += intersection_of_host_networks if !intersection_of_host_networks.blank?
-  all_networks += all_cloud_networks            if !all_cloud_networks.blank?
+  all_networks += union_of_host_networks if !union_of_host_networks.blank?
+  all_networks += all_cloud_networks     if !all_cloud_networks.blank?
   $evm.log(:info, "all_networks => #{all_networks}") if @DEBUG
   
+  # find networks that match the network configuration names
+  network_configurations = get_network_configurations()
+  $evm.log(:info, "network_configurations => #{network_configurations}") if @DEBUG
+  network_configurations.each do |network_pattern, network_configuraiton|
+    network_configurations[network_pattern][:networks] = all_networks.select { |network| network =~ /#{network_pattern}/ }
+    $evm.log(:info, "Matching networks for #{network_pattern}: #{network_configurations[network_pattern][:networks]}") if @DEBUG
+  end
+  
   # determine the selecatable networks shared by all hosts that are also have network configuration with a network address space
-  all_networks.each do |network_name|
-    network               = $evm.vmdb(:lan).find_by_name(network_name) || $evm.vmdb(:cloud_subnet).find_by_name(network_name)
-    network_configuration = get_network_configuration(network.name)
-    if !network_configuration['network_address_space'].blank?
-      selectable_networks[network_name] = "#{network_configuration['network_address_space']} (#{network_name}) (#{destination_provider_name})"
+  network_configurations.each do |network_name, network_configuration|
+    if !network_configuration[:networks].empty? && network_configuration['network_purpose'].include?(network_purpose)
+      selectable_networks[network_name] = "#{network_configuration['network_address_space']} (#{network_name}) (#{destination_provider_name}) (#{network_configuration[:networks]})"
     end
   end
   $evm.log(:info, "selectable_networks => #{selectable_networks}") if @DEBUG
