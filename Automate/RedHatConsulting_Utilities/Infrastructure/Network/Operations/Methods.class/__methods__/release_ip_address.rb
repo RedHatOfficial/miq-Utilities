@@ -148,29 +148,15 @@ def get_vm_and_options()
   return vm,options
 end
 
-# Get the network configuration for a given network
+# Get all of the network configuration instances.
 #
-# @param network_name Name of the network to get the configuraiton for
-# @return Hash Configuration information about the given network
-#                network_purpose
-#                network_address_space
-#                network_gateway
-#                network_nameservers
-#                network_ddi_provider
-@network_configurations         = {}
-@missing_network_configurations = {}
-NETWORK_CONFIGURATION_URI       = 'Infrastructure/Network/Configuration'.freeze
-def get_network_configuration(network_name)
-  if @network_configurations[network_name].blank? && @missing_network_configurations[network_name].blank?
-    begin
-      escaped_network_name                  = network_name.gsub(/[^a-zA-Z0-9_\.\-]/, '_')
-      @network_configurations[network_name] = $evm.instantiate("#{NETWORK_CONFIGURATION_URI}/#{escaped_network_name}")
-    rescue
-      @missing_network_configurations[network_name] = "WARN: No network configuration exists"
-      $evm.log(:warn, "No network configuration for Network <#{network_name}> (escaped <#{escaped_network_name}>) exists")
-    end
-  end
-  return @network_configurations[network_name]
+# @return Array of all of the network configuration instances
+NETWORK_CONFIGURATION_URI = 'Infrastructure/Network/Configuration'.freeze
+def get_network_configurations()
+  network_instances = $evm.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") }
+  network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten]
+  
+  return network_instances
 end
 
 begin
@@ -194,13 +180,27 @@ begin
     exit MIQ_OK
   end
   
-  network_name          = network.name
-  network_configuration = get_network_configuration(network_name)
-  $evm.log(:info, "network_name          => #{network_name}")          if @DEBUG
-  $evm.log(:info, "network_configuration => #{network_configuration}") if @DEBUG
+  # find matching network configuration
+  vm_network_name            = network.name
+  network_configurations     = get_network_configurations()
+  network_configuration      = nil
+  network_configuration_name = nil
+  $evm.log(:info, "network_configurations => #{network_configurations}") if @DEBUG
+  network_configurations.each do |configuration_name, configuraiton|
+    if vm_network_name =~ /#{configuration_name}/
+      network_configuration_name = configuration_name
+      network_configuration      = configuraiton
+      break
+    end
+  end
+  $evm.log(:info, "vm_network_name            => #{vm_network_name}")            if @DEBUG
+  $evm.log(:info, "network_configuration_name => #{network_configuration_name}") if @DEBUG
+  $evm.log(:info, "network_configuration      => #{network_configuration}")      if @DEBUG
+  
+  $evm.log(:warn, "Could not find network configuration for VM network <#{vm_network_name}>. Skipping release IP.") if network_configuration.nil?
 
   # determine the DDI provider
-  ddi_provider = network_configuration['network_ddi_provider']
+  ddi_provider = network_configuration['network_ddi_provider'] if network_configuration
   $evm.log(:info, "ddi_provider => #{ddi_provider}") if @DEBUG
   
   if !ddi_provider.blank?
@@ -208,7 +208,8 @@ begin
     begin
       $evm.log(:info, "Release IP address using DDI Provider <#{ddi_provider}>") if @DEBUG
     
-      $evm.root['network_name'] = network_name
+      $evm.root['network_name']               = vm_network_name
+      $evm.root['network_configuration_name'] = network_configuration_name
       $evm.instantiate("#{DDI_PROVIDERS_URI}/#{ddi_provider}#release_ip_address")
       released_ip_address = get_param(:released_ip_address)
     
@@ -222,17 +223,18 @@ begin
       $evm.root['ae_reason'] = nil
       
       # clean up after call
-      $evm.root['network_name']       = nil
-      $evm.root['released_ip_address'] = nil
+      $evm.root['network_name']               = nil
+      $evm.root['network_configuration_name'] = nil
+      $evm.root['released_ip_address']        = nil
       
       $evm.root['ae_reason'] = "Released IP address <#{released_ip_address}>"
     end
   else
-    $evm.root['ae_reason'] = "Can not retire IP for VM <#{vm.name}>, no DDI Provider found for Network <#{network_name}>."
+    $evm.root['ae_reason'] = "Can not retire IP for VM <#{vm.name}>, no DDI Provider found for Network <#{vm_network_name}>."
     $evm.root['ae_level']  = :warning
   end
   
-  # set the aquired IP
+  # set the released IP
   $evm.object['released_ip_address'] = released_ip_address
   $evm.root['ae_result'] = 'ok'
 end
