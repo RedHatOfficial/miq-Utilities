@@ -10,3 +10,6 @@ object:
   fields:
   - execute:
       value: release_ip_address
+      collect: "/released_ip_address = released_ip_address"
+  - notify:
+      value: notify_released_ip

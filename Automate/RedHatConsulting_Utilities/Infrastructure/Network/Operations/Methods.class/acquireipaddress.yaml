@@ -11,3 +11,5 @@ object:
   - execute:
       value: acquire_ip_address
       collect: "/acquired_ip_address = acquired_ip_address"
+  - notify:
+      value: notify_aquired_ip
