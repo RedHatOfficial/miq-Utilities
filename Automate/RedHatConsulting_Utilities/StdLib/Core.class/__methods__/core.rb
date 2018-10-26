@@ -173,7 +173,6 @@ module RedHatConsulting_Utilities
         param_value ||= @handle.get_state_var(param.to_sym)
         param_value ||= @handle.get_state_var(param.to_s)
 
-        log(:info, "{ '#{param}' => '#{param_value}' }") if @DEBUG
         param_value
       end
 
@@ -205,6 +204,63 @@ module RedHatConsulting_Utilities
           true
         end
       end
+      
+      # Function for getting the current VM and associated options based on the vmdb_object_type.
+      #
+      # Supported vmdb_object_types
+      #   * miq_provision
+      #   * vm
+      #   * automation_task
+      #
+      # @return vm,options
+      def get_vm_and_options()
+        @handle.log(:info, "@handle.root['vmdb_object_type'] => '#{@handle.root['vmdb_object_type']}'.")
+        case @handle.root['vmdb_object_type']
+          when 'miq_provision'
+            # get root object
+            miq_provision =  @handle.root['miq_provision']
+            dump_object('miq_provision', miq_provision) if @DEBUG
+
+            # get VM
+            vm = miq_provision.vm
+
+            # get options
+            options = miq_provision.options
+            #merge the ws_values, dialog, top level options into one list to make it easier to search
+            options = options.merge(options[:ws_values]) if options[:ws_values]
+            options = options.merge(options[:dialog])    if options[:dialog]
+          when 'vm'
+            # get root objet & VM
+            vm = get_param(:vm)
+
+            # get options
+            options =  @handle.root.attributes
+            #merge the ws_values, dialog, top level options into one list to make it easier to search
+            options = options.merge(options[:ws_values]) if options[:ws_values]
+            options = options.merge(options[:dialog])    if options[:dialog]
+          when 'automation_task'
+            # get root objet
+            automation_task =  @handle.root['automation_task']
+
+            # get VM
+            vm  = get_param(:vm)
+
+            # get options
+            options = get_param(:options)
+            options = JSON.load(options)     if options && options.class == String
+            options = options.symbolize_keys if options
+            #merge the ws_values, dialog, top level options into one list to make it easier to search
+            options = options.merge(options[:ws_values]) if options[:ws_values]
+            options = options.merge(options[:dialog])    if options[:dialog]
+          else
+            error("Can not handle vmdb_object_type: #{@handle.root['vmdb_object_type']}")
+          end
+
+          # standerdize the option keys
+          options = options.symbolize_keys()
+
+          return vm,options
+        end
 
     end
   end
