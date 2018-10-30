@@ -126,6 +126,11 @@ def tower_request(action, api_path, payload=nil)
   server         = TOWER_CONFIG['tower_host']
   api_version    = TOWER_CONFIG['api_version']
   tower_provider = $evm.vmdb(:ems).where("type = 'ManageIQ::Providers::AnsibleTower::AutomationManager'").find { |tower| tower.url =~ /#{server}/ }
+
+  if tower_provider.nil?
+    error("Ansible Tower Automation Provider not configured for Tower host #{server}. Configure an Automation Provider to use #{server}, and update configuration instance #{TOWER_CONFIG.name}")
+  end
+
   username       = tower_provider.authentication_userid
   password       = tower_provider.authentication_password
   $evm.log(:info, "server: #{server}, api_version: #{api_version}, username: #{username}") if @DEBUG
