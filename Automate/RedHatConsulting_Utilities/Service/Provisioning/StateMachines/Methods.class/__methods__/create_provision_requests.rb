@@ -35,67 +35,12 @@ def yaml_data(task, option)
   task.get_option(option).nil? ? nil : YAML.load(task.get_option(option))
 end
 
-#
-# Utility library for Red Hat Virtualization
-#
-require 'ovirtsdk4'
-module Automation
-  module Infrastructure
-    module VM
-      module RedHat
-        class Utils
-          
-          def initialize(ems, handle = $evm)
-            @debug      = true
-            @handle     = handle
-            @ems        = ems_to_service_model(ems)
-            @connection = connection(@ems)
-          end          
-
-          def vnic_profile_id(profile_name)
-            vnic_profile = vnic_profiles_service.list.select { |profile| 
-              profile.name == profile_name 
-            }.first
-            vnic_profile.id
-          end
-      
-          private
-      
-          def ems_to_service_model(ems)
-            raise "Invalid EMS" if ems.nil?
-            # ems could be a numeric id or the ems object itself
-            unless ems.is_a?(DRb::DRbObject) && /Manager/.match(ems.type.demodulize)
-              if /^\d{1,13}$/.match(ems.to_s)
-                ems = @handle.vmdb(:ems, ems)
-              end
-            end
-            ems
-          end
-      
-          def vnic_profiles_service
-            @connection.system_service.vnic_profiles_service
-          end
-                
-          def connection(ems)
-            connection = OvirtSDK4::Connection.new(
-              url: "https://#{ems.hostname}/ovirt-engine/api",
-              username: ems.authentication_userid,
-              password: ems.authentication_password,
-              insecure: true)
-            connection if connection.test(true)
-          end
-        end
-      end
-    end
-  end
-end
-
 # Creates provision requests based on the givin parameters.
 #
 # @param task                        ServiceTemplateProvisionTask Task used to create the service that will own the VMs created by these provision request(s)
 # @param requester                   User                         User requesting the new VMs
 # @param number_of_vms               Integer                      Number of VMs to provision
-# @param provisioning_network_name   String                       Provisioning network name
+# @param provisioning_network_name_pattern String                 Provisioning network name pattern
 # @param template_fields             Hash                         Hash describing the template to use.
 #                                                                 Must contain :name and :guid fields.
 # @param dialog_options              Hash                         User set options via dialog
@@ -111,18 +56,18 @@ end
 #
 # @return Array all of the created requests
 def create_provision_requests(task, requester, number_of_vms,
-                              provisioning_network_name,
+                              provisioning_network_name_pattern,
                               template_fields, dialog_options,
                               tags = {}, custom_vm_fields = {}, custom_additional_values = {}, create_seperate_requests = true)
-  $evm.log(:info, "START: create_provision_requests")                              if @DEBUG
-  $evm.log(:info, "number_of_vms               => #{number_of_vms}")               if @DEBUG
-  $evm.log(:info, "provisioning_network_name   => #{provisioning_network_name}")   if @DEBUG
-  $evm.log(:info, "template_fields             => #{template_fields}")             if @DEBUG
-  $evm.log(:info, "dialog_options              => #{dialog_options}")              if @DEBUG
-  $evm.log(:info, "tags                        => #{tags}")                        if @DEBUG
-  $evm.log(:info, "custom_additional_values    => #{custom_additional_values}")    if @DEBUG
-  $evm.log(:info, "custom_vm_fields            => #{custom_vm_fields}")            if @DEBUG
-  $evm.log(:info, "create_seperate_requests    => #{create_seperate_requests}")    if @DEBUG
+  $evm.log(:info, "START: create_provision_requests")                                          if @DEBUG
+  $evm.log(:info, "number_of_vms                     => #{number_of_vms}")                     if @DEBUG
+  $evm.log(:info, "provisioning_network_name_pattern => #{provisioning_network_name_pattern}") if @DEBUG
+  $evm.log(:info, "template_fields                   => #{template_fields}")                   if @DEBUG
+  $evm.log(:info, "dialog_options                    => #{dialog_options}")                    if @DEBUG
+  $evm.log(:info, "tags                              => #{tags}")                              if @DEBUG
+  $evm.log(:info, "custom_additional_values          => #{custom_additional_values}")          if @DEBUG
+  $evm.log(:info, "custom_vm_fields                  => #{custom_vm_fields}")                  if @DEBUG
+  $evm.log(:info, "create_seperate_requests          => #{create_seperate_requests}")          if @DEBUG
   
   # determine number of vms to create and
   # how many provisioning requests to create and
@@ -142,36 +87,15 @@ def create_provision_requests(task, requester, number_of_vms,
   # === START: vm_fields
   vm_fields = {}
   
-  # determine if the provisioning network is a distributed vswitch or not
-  provisioning_network = $evm.vmdb(:lan).find_by_name(provisioning_network_name) || $evm.vmdb(:cloud_subnet).find_by_name(provisioning_network_name)
-  if !(provisioning_network_name =~ /^dvs_/) && provisioning_network && (provisioning_network.respond_to?(:switch) && provisioning_network.switch.shared)
-    provisioning_network_name = "dvs_#{provisioning_network_name}"
-  end
-  $evm.log(:info, "provisioning_network_name => #{provisioning_network_name}") if @DEBUG
+  # determine if auto placement or not
+  # NOTE: this used to be determined based on if the network was a cloud network or not,
+  #       but now network is determined after placement, so need to cirlce back here and
+  #       figure out new way to do cloud stuff.
+  #       This current setting will likely break using this code with cloud right now
+  vm_fields[:placement_auto] = true
   
-  # if a cloud network
-  # else infrastructure network
-  if provisioning_network.respond_to?(:cloud_network)
-    vm_fields[:placement_auto]              = false
-    vm_fields[:cloud_subnet]                = provisioning_network.id
-    vm_fields[:cloud_network]               = provisioning_network.cloud_network_id
-    vm_fields[:placement_availability_zone] = provisioning_network.availability_zone_id
-  else
-    vm_fields[:placement_auto] = true
-    
-    # if provider is RHV and CFME version 5.9 or above use VLAN profile ID
-    # else use vlan name
-    template = $evm.vmdb(:vm_or_template).find_by_guid(template_fields[:guid])
-    $evm.log(:info, "template => #{template}") if @DEBUG
-    if (template.ext_management_system.type =~ /Redhat/) && ($evm.root['miq_server'].version >= '5.9')
-      vnic_profile_id = Automation::Infrastructure::VM::RedHat::Utils.new(template.ext_management_system).vnic_profile_id(provisioning_network_name)
-      vm_fields[:vlan] = vnic_profile_id
-    else
-       vm_fields[:vlan] = provisioning_network_name
-    end
-  end
-  vm_fields[:network_adapters] = 1
-  
+  # TODO: used to set placement_availability_zone based on the selected network if cloud, but now network doesnt get set to later, so need way to figure out AZ, or do that automatically in determine placement
+
   vm_fields.merge!(custom_vm_fields)
   vm_fields.merge!(dialog_options)
   
@@ -193,8 +117,8 @@ def create_provision_requests(task, requester, number_of_vms,
 
   # === START: additional_values (AKA: ws_values)
   additional_values = {
-    :service_id   => task.destination.id,
-    :network_name => provisioning_network_name
+    :service_id                        => task.destination.id,
+    :provisioning_network_name_pattern => provisioning_network_name_pattern
   }
   additional_values.merge!(custom_additional_values)
   additional_values.merge!(dialog_options)
@@ -297,12 +221,12 @@ begin
     #custom_vm_fields[:security_groups]       = ???
     
     # create provision requests
-    provisioning_network_name = dialog_options["location_#{index}_provisioning_network".to_sym]
+    provisioning_network_name_pattern = dialog_options["location_#{index}_provisioning_network".to_sym]
     new_provision_requests |= create_provision_requests(
                                 task,
                                 user,
                                 number_of_vms_for_this_template,
-                                provisioning_network_name,
+                                provisioning_network_name_pattern,
                                 template_fields,
                                 dialog_options,
                                 dialog_tags,

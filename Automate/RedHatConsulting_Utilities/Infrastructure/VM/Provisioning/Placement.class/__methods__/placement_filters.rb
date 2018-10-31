@@ -20,7 +20,7 @@ module RedHatConsulting_Utilities
 
               def initialize(handle = $evm)
                 @handle = handle
-                @DEBUG = true
+                @DEBUG  = false
               end
 
               # IMPLEMENTERS: DO NOT MODIFY

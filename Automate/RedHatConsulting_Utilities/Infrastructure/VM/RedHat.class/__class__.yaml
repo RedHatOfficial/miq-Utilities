@@ -1,0 +1,13 @@
+---
+object_type: class
+version: 1.0
+object:
+  attributes:
+    description: 
+    display_name: 
+    name: RedHat
+    type: 
+    inherits: 
+    visibility: 
+    owner: 
+  schema: []

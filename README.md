@@ -73,7 +73,7 @@ Instances where this domain overrides defaults provided in ManageIQ
   * Override to be able to send email on any update
   * Override to collect Telemetry data on every invocation based on current step name and `ae_status_step`
 
-# Automate StdLib
+## Automate StdLib
 
 This namespace serves as a "standard library" of CloudForms (ManageIQ)
 Automation code. The goal is for common methods to be collected here,
@@ -81,6 +81,13 @@ and to be suitbale for inclusion as "Embedded Methods".
 
 See: https://cloudformsblog.redhat.com/2018/04/17/embedded-methods/ for
 conceptual background.
+
+# Provision Dialogs
+
+* `miq_provision_redhat_dialogs_template_no_required_fields`
+  * a clone of `miq_provision_redhat_dialogs_template` only with all required fields set to not required. This is useful when calling `create_provision_request` and not wanting to pass in all fields and rather determinging them later. For exampl determing the `vlan` bassed on placement rather then before calling `create_provision_request`.
+* miq_provision_vmware_dialogs_template_no_required_fields.yaml
+  * a clone of `miq_provision_vmware_dialogs_template` only with all required fields set to not required. This is useful when calling `create_provision_request` and not wanting to pass in all fields and rather determinging them later. For exampl determing the `vlan` bassed on placement rather then before calling `create_provision_request`.
 
 # Install
 0. Install dependencies
