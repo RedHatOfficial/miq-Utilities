@@ -13,9 +13,9 @@ module RedHatConsulting_Utilities
               VM_PROVISIONING_CONFIG_URI = 'Infrastructure/VM/Provisioning/Configuration/default'
 
               def initialize(handle = $evm)
-                @handle = handle
+                @handle   = handle
                 @settings = RedHatConsulting_Utilities::StdLib::Core::Settings.new()
-                @DEBUG = true
+                @DEBUG    = false
               end
 
               def main
