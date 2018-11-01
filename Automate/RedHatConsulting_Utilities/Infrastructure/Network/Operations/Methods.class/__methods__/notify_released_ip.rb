@@ -6,14 +6,14 @@ module Automate
           class NotifyReleasedIP
             include RedHatConsulting_Utilities::StdLib::Core
             
-            def intialize(handle = $evm)
+            def initialize(handle = $evm)
               @handle = handle
             end
                 
             def main
               vm,options          = get_vm_and_options()
               released_ip_address = get_param(:released_ip_address)
-              $evm.create_notification(:level => 'info', :message => "Released IP <#{released_ip_address}> for VM <#{vm.name}>.")
+              @handle.create_notification(:level => 'info', :message => "Released IP <#{released_ip_address}> for VM <#{vm.name}>.")
             end
             
           end
