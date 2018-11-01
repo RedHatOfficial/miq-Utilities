@@ -13,12 +13,12 @@ object:
   schema:
   - field:
       aetype: attribute
-      name: tower_host
+      name: tower_url
       display_name: 
       datatype: string
       priority: 1
       owner: 
-      default_value: tower.example.com
+      default_value: 
       substitute: true
       message: create
       visibility: 
@@ -33,10 +33,90 @@ object:
       max_time: 
   - field:
       aetype: attribute
-      name: api_version
+      name: tower_username
       display_name: 
       datatype: string
       priority: 2
+      owner: 
+      default_value: 
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: attribute
+      name: tower_password
+      display_name: 
+      datatype: password
+      priority: 3
+      owner: 
+      default_value: 
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: attribute
+      name: tower_verify_ssl
+      display_name: 
+      datatype: boolean
+      priority: 4
+      owner: 
+      default_value: 
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: attribute
+      name: tower_inventory_name
+      display_name: 
+      datatype: string
+      priority: 5
+      owner: 
+      default_value: 
+      substitute: true
+      message: create
+      visibility: 
+      collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: attribute
+      name: tower_api_version
+      display_name: 
+      datatype: string
+      priority: 6
       owner: 
       default_value: v2
       substitute: true
@@ -53,56 +133,37 @@ object:
       max_time: 
   - field:
       aetype: attribute
-      name: inventory_name
-      display_name: 
-      datatype: string
-      priority: 3
-      owner: 
-      default_value: Example CloudForms Static
-      substitute: true
-      message: create
-      visibility: 
-      collect: 
-      scope: 
-      description: 
-      condition: 
-      on_entry: 
-      on_exit: 
-      on_error: 
-      max_retries: 
-      max_time: 
-  - field:
-      aetype: attribute
-      name: verify_ssl
-      display_name: 
-      datatype: boolean
-      priority: 4
-      owner: 
-      default_value: 'false'
-      substitute: true
-      message: create
-      visibility: 
-      collect: 
-      scope: 
-      description: 
-      condition: 
-      on_entry: 
-      on_exit: 
-      on_error: 
-      max_retries: 
-      max_time: 
-  - field:
-      aetype: attribute
-      name: api_timeout
+      name: tower_api_timeout
       display_name: 
       datatype: integer
-      priority: 5
+      priority: 7
       owner: 
       default_value: '90'
       substitute: true
       message: create
       visibility: 
       collect: 
+      scope: 
+      description: 
+      condition: 
+      on_entry: 
+      on_exit: 
+      on_error: 
+      max_retries: 
+      max_time: 
+  - field:
+      aetype: method
+      name: get_tower_configuration
+      display_name: 
+      datatype: string
+      priority: 8
+      owner: 
+      default_value: get_tower_configuration
+      substitute: true
+      message: create
+      visibility: 
+      collect: "/tower_username = tower_username; /tower_password = tower_password;
+        /tower_url = tower_url; /tower_verify_ssl tower_verify_ssl"
       scope: 
       description: 
       condition: 

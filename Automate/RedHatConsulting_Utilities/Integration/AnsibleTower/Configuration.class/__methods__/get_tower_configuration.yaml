@@ -3,13 +3,11 @@ object_type: method
 version: 1.0
 object:
   attributes:
-    name: add_host_to_inventory
+    name: get_tower_configuration
     display_name: 
     description: 
     scope: instance
     language: ruby
     location: inline
-    embedded_methods:
-    - "/StdLib/Core/Core"
     options: {}
   inputs: []
