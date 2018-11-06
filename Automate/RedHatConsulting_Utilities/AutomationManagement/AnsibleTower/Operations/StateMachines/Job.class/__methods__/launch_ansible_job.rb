@@ -1,7 +1,45 @@
 #
-# Description: Launch a Ansible Job Template and save the job id
-#              in the state variables so we can use it when we
-#              wait for the job to finish.
+# Description: 
+#
+#   Launch a Ansible Job Template and save the job id
+#   in the state variables so we can use it when we
+#   wait for the job to finish.
+#
+#   We are overriding the default job launch method becuase 
+#   of problems when the code encounters symbols instead of 
+#   extra vars.
+#
+#   Related Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1647192
+#
+#   This method can be removed once the bugzilla is addressed.
+#
+#   This method should be updated if the base launch_ansible_job
+#   method in the MIQ domain is updates with CFME releases. 
+#   When updating, ensure that the string conversion is preserved, as described below.
+#
+# Updates made over base methods:
+#   
+#   All updates made are in the object_vars method. All keys that may be 
+#   symbols are converted to strings before string operations are used on them.
+#
+#   All updates are marked with an 'Override' comment in the code
+#
+#   This is a minimal diff to the default method in the manageIQ domain:
+#
+#     49c49
+#     <                   key_list = object.attributes.keys.select { |k| k.to_s.start_with?('param', 'dialog_param') }
+#     ---
+#     >                   key_list = object.attributes.keys.select { |k| k.start_with?('param', 'dialog_param') }
+#     51c51
+#     <                     if key.to_s.start_with?('param')
+#     ---
+#     >                     if key.start_with?('param')
+#     55c55
+#     <                       match_data = ANSIBLE_DIALOG_VAR_REGEX.match(key.to_s)
+#     ---
+#     >                       match_data = ANSIBLE_DIALOG_VAR_REGEX.match(key)
+#
+#
 #
 
 module ManageIQ
@@ -46,12 +84,17 @@ module ManageIQ
                   # We are traversing the list twice because the object.attributes is a DrbObject
                   # and when we use each_with_object on a DrbObject, it doesn't seem to update the
                   # hash. We are investigating that
+                  
+                  # Override - update method to ensure that 'start_with?' will always operate on a string
                   key_list = object.attributes.keys.select { |k| k.to_s.start_with?('param', 'dialog_param') }
                   key_list.each_with_object(ext_vars) do |key, hash|
+                    # Override - update method to ensure that 'start_with?' will always operate on a string
                     if key.to_s.start_with?('param')
                       match_data = ANSIBLE_VAR_REGEX.match(object[key])
                       hash[match_data[1].strip] ||= match_data[2] if match_data
                     else
+                      # Override - update method to ensure that 'match' is called
+                      # on a string  
                       match_data = ANSIBLE_DIALOG_VAR_REGEX.match(key.to_s)
                       hash[match_data[1]] = object[key] if match_data
                     end
