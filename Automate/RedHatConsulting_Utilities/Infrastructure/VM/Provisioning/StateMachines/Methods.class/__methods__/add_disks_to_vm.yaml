@@ -4,11 +4,13 @@ version: 1.0
 object:
   attributes:
     name: add_disks_to_vm
-    display_name: AddDisksToVM
+    display_name: add_disks_to_vm
     description: 
     scope: instance
     language: ruby
     location: inline
+    embedded_methods:
+    - "/StdLib/Core/Core"
     options: {}
   inputs:
   - field:

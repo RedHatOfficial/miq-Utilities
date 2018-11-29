@@ -3,8 +3,8 @@ object_type: method
 version: 1.0
 object:
   attributes:
-    name: wait_for_vm_ip_addresses
-    display_name: WaitForVMIPAddresses
+    name: wait_for_vm_hostnames
+    display_name: WaitForVMIHostNames
     description: 
     scope: instance
     language: ruby

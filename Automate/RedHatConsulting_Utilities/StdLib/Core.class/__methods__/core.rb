@@ -204,6 +204,19 @@ module RedHatConsulting_Utilities
           true
         end
       end
+
+      # Perform a method retry for the given reason
+      #
+      # @param seconds Number of seconds to wait before next retry
+      # @param reason  Reason for the retry
+      def automate_retry(seconds, reason)
+        $evm.root['ae_result'] = 'retry'
+        $evm.root['ae_retry_interval'] = "#{seconds.to_i}.seconds"
+        $evm.root['ae_reason'] = reason
+
+        $evm.log(:info, "Retrying #{@method} after #{seconds} seconds, because '#{reason}'") if @DEBUG
+        exit MIQ_OK
+      end
       
       # Function for getting the current VM and associated options based on the vmdb_object_type.
       #
@@ -219,7 +232,6 @@ module RedHatConsulting_Utilities
           when 'miq_provision'
             # get root object
             miq_provision =  @handle.root['miq_provision']
-            dump_object('miq_provision', miq_provision) if @DEBUG
 
             # get VM
             vm = miq_provision.vm

@@ -28,7 +28,7 @@ module RedHatConsulting_Utilities
         SETTINGS = {
             global: {
                 network_lookup_keys: %w(environment), #orderd list of CF tag names to use to lookup vlan names, _ separated
-                groups_can_order_for: %w(EvmGroup-super_administrator), #list of groups whos memebers can order services on behalf of others
+                groups_can_order_for: %w(EvmGroup-super_administrator), #list of groups whose members can order services on behalf of others
                 vm_auto_start_suppress: true,
             },
             default: {
@@ -38,12 +38,18 @@ module RedHatConsulting_Utilities
                 network_redhat: '<Template>',
 
                 retirement: 30.days.to_i,
-                retirement_warn: 14.days.to_i
+                retirement_warn: 14.days.to_i,
+                retirement_max_extensions: 3,
             },
             r901: {
                 network_vmware: 'dvs_0810_INF_VMS_PRD_HFLEX',
                 network_vmware_test: 'dvs_0820_Self_Prov_Test(10.43.181.x)',
                 network_vmware_dev: 'dvs_0821_Self_Prov_Dev(10.43.182.x)',
+                default_custom_spec: 'Win2016(all versions)-Dev-Test-len',
+                default_custom_spec_prefix: 'Win2016(all versions)-Dev-Test',
+                ipam_dhcp_range_dev: 'Self_Provo_Dev',
+                ipam_dhcp_range_test: 'Self_Provo_Test',
+                infoblox_url: 'https://10.111.105.203/wapi/v2.6.1/',
             },
         }
 
@@ -57,6 +63,7 @@ module RedHatConsulting_Utilities
         #   The key to fetch from the selected region, or default if the key is not found in the region
         def get_setting(region, key)
           region = ('r' + region.to_s).to_sym unless region == :global
+          key = key.to_sym
           raise(ArgumentError, "region [#{region}] does not exist in settings hash") unless SETTINGS.key?(region)
           return SETTINGS[region][key] if SETTINGS[region].key?(key)
           raise(ArgumentError, "key [#{key}] does not exist in region [#{region}] or defaults settings hash") unless SETTINGS[:default].key?(key)
@@ -69,7 +76,14 @@ module RedHatConsulting_Utilities
 end
 
 # settings = RedHatConsulting_Utilities::StdLib::Core::Settings.new()
-# puts settings.get_setting(901, :network_rhv)
+# puts settings.get_setting(901, :network_vmware)
 #
-# x = settings.get_setting(901, :foo) rescue "no x"
+# x = settings.get_setting(901, :default_custom_spec) rescue "no x"
+# puts x
+#
+# x = settings.get_setting(:global, :network_lookup_keys) rescue "no x"
+# puts x
+#
+# @region = 901
+# x = settings.get_setting(@region, 'infoblox_url')
 # puts x

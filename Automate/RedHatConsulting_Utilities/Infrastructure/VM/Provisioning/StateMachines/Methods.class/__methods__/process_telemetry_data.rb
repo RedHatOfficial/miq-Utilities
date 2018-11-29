@@ -57,8 +57,8 @@ begin
   duration_vm_clone                  = get_duration(:vm_provisioning_telemetry_on_entry_Provision,                     :vm_provisioning_telemetry_on_exit_CheckProvisioned)
   duration_wait_for_vm_mac_addresses = get_duration(:vm_provisioning_telemetry_on_entry_WaitForVMMACAddresses,         :vm_provisioning_telemetry_on_exit_WaitForVMMACAddresses)
   duration_start_vm                  = get_duration(:vm_provisioning_telemetry_on_entry_StartVM,                       :vm_provisioning_telemetry_on_exit_StartVM)
-  duration_wait_for_vm_ip_addresses  = get_duration(:vm_provisioning_telemetry_on_entry_PostSatelliteBuildCompleted_1, :vm_provisioning_telemetry_on_exit_PostSatelliteBuildCompleted_1)
-  
+  duration_wait_for_vm_ip_addresses  = get_duration(:vm_provisioning_telemetry_on_entry_WaitForVMIPAddresses,          :vm_provisioning_telemetry_on_exit_WaitForVMIPAddresses)
+
   set_provisioning_telemetry_custom_attribute(vm, 'Time: Request Created',               prov.created_on.localtime)
   set_provisioning_telemetry_custom_attribute(vm, 'Time: Request Completed',             now)
   set_provisioning_telemetry_custom_attribute(vm, 'Hour: Request Created',               prov.created_on.localtime.hour)
