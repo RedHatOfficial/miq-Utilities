@@ -3,14 +3,11 @@ object_type: method
 version: 1.0
 object:
   attributes:
-    name: remove_host_from_inventory
+    name: AnsibleTowerBase
     display_name: 
     description: 
     scope: instance
     language: ruby
     location: inline
-    embedded_methods:
-    - "/StdLib/Core/Core"
-    - "/Integration/AnsibleTower/AnsibleTowerBase/AnsibleTowerBase"
     options: {}
   inputs: []
