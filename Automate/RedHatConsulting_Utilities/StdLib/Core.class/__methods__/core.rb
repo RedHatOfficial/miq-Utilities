@@ -7,12 +7,13 @@ module RedHatConsulting_Utilities
 
       def initialize(handle = $evm)
         @handle = handle
+        @task = get_stp_task
       end
 
       def log(level, msg, update_message = false)
         miq_request = get_request rescue nil
         @handle.log(level, "#{msg}")
-        miq_request.user_message = msg if miq_request && (update_message || level.to_s == 'error')
+        @task.message = msg if @task && (update_message || level == 'error')
       end
 
       def dump_thing(thing)
