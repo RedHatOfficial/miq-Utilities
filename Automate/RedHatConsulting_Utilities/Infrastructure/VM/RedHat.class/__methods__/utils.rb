@@ -23,6 +23,13 @@ module Automation
             }.first
             vnic_profile
           end
+          
+          def vnic_profile_id(profile_name)	
+            vnic_profile = vnic_profiles_service.list.select { |profile| 	
+              profile.name == profile_name 	
+            }.first	
+            vnic_profile.id	
+          end
 
           def vnic_profiles(dc_name)
             profiles = []
@@ -78,7 +85,6 @@ module Automation
               insecure: true)
             connection if connection.test(true)
           end
-
         end
       end
     end
