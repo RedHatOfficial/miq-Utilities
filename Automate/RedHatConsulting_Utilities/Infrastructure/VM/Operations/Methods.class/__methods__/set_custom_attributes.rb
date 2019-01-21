@@ -56,8 +56,9 @@ end
 # @param attribute Name of the attribute to set on the vm
 # @param value     Value of the attribute to set on the vm
 def set_vm_custom_attribute(vm, attribute, value)
-  vm.custom_set(attribute, value)
-  $evm.log(:info, "Custom Attribute #{attribute}=#{value} set on '#{vm.name}'") if @DEBUG
+  safe_attribute = attribute.gsub('[ :].*', '_')
+  vm.custom_set(safe_attribute, value)
+  $evm.log(:info, "Custom Attribute #{safe_attribute}=#{value} set on '#{vm.name}'") if @DEBUG
 end
 
 begin

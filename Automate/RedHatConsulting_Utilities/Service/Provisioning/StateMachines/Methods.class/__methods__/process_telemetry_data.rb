@@ -7,7 +7,7 @@
 #
 @DEBUG = false
 
-PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
+PROVISIONING_TELEMETRY_PREFIX = "Provisioning_Telemetry"
 
 # Converts duration of seconds to HH:MM:SS
 #
@@ -41,7 +41,7 @@ end
 
 # Set VM custom attribute with provisioning telemetry data
 def set_provisioning_telemetry_custom_attribute(service, description, value)
-  service.custom_set("#{PROVISIONING_TELEMETRY_PREFIX} #{description}", value)
+  service.custom_set("#{PROVISIONING_TELEMETRY_PREFIX}_#{description}".gsub('[ :].*', '_'), value)
 end
 
 begin
@@ -60,10 +60,10 @@ begin
   duration_service_provisioning      = get_duration(:service_provisioning_telemetry_on_entry_sequencer, now)
   duration_initial_vms_provisioning  = get_duration(:service_provisioning_telemetry_on_entry_provision, :service_provisioning_telemetry_on_exit_checkprovisioned)
   
-  set_provisioning_telemetry_custom_attribute(service, 'Time: Request Created',                task.created_on.localtime)
-  set_provisioning_telemetry_custom_attribute(service, 'Time: Request Completed',              now)
-  set_provisioning_telemetry_custom_attribute(service, 'Hour: Request Created',                task.created_on.localtime.hour)
-  set_provisioning_telemetry_custom_attribute(service, 'Duration: Task Queue',                 duration_task_queue)
-  set_provisioning_telemetry_custom_attribute(service, 'Duration: Total Service Provisioning', duration_service_provisioning)
-  set_provisioning_telemetry_custom_attribute(service, 'Duration: Initial VMs Provisioning',   duration_initial_vms_provisioning)
+  set_provisioning_telemetry_custom_attribute(service, 'Time_Request_Created',                task.created_on.localtime)
+  set_provisioning_telemetry_custom_attribute(service, 'Time_Request_Completed',              now)
+  set_provisioning_telemetry_custom_attribute(service, 'Hour_Request_Created',                task.created_on.localtime.hour)
+  set_provisioning_telemetry_custom_attribute(service, 'Duration_Task_Queue',                 duration_task_queue)
+  set_provisioning_telemetry_custom_attribute(service, 'Duration_Total_Service_Provisioning', duration_service_provisioning)
+  set_provisioning_telemetry_custom_attribute(service, 'Duration_Initial_VMs_Provisioning',   duration_initial_vms_provisioning)
 end

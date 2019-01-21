@@ -6,7 +6,7 @@
 @DEBUG = false
 require 'cgi'
 
-PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
+PROVISIONING_TELEMETRY_PREFIX = "Provisioning_Telemetry"
 
 # Log an error and exit.
 #
@@ -216,7 +216,7 @@ def send_vm_provision_update_email(prov, to, from, update_message, vm_current_pr
     body += "<h1>VM Provisioning Statistics</h1>"
     body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
     vm_telemetry_custom_keys.each do |custom_key|
-      body += "<tr><td><b>#{custom_key}</b></td><td>#{vm.custom_get(custom_key)}</td></tr>"
+      body += "<tr><td><b>#{custom_key}</b></td><td>#{vm.custom_get(custom_key.gsub('[ :].*', '_'))}</td></tr>"
     end 
     body += "</table>"
   end

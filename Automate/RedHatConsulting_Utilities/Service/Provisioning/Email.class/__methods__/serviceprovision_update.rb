@@ -6,7 +6,7 @@
 @DEBUG = false
 require 'cgi'
 
-PROVISIONING_TELEMETRY_PREFIX = "Provisioning: Telemetry:"
+PROVISIONING_TELEMETRY_PREFIX = "Provisioning_Telemetry"
 
 # Log an error and exit.
 #
@@ -302,7 +302,7 @@ def send_service_provision_update_email(request, to, from, update_message, cfme_
       body += "<h1>Service Provisioning Statistics</h1>"
       body += "<table border=1 cellpadding=5 style='border-collapse: collapse;'>"
       service_telemetry_custom_keys.each do |custom_key|
-        body += "<tr><td><b>#{custom_key}</b></td><td>#{service.custom_get(custom_key)}</td></tr>"
+        body += "<tr><td><b>#{custom_key}</b></td><td>#{service.custom_get(custom_key.gsub('[ :].*', '_'))}</td></tr>"
       end 
       body += "</table>"
     end
