@@ -7,7 +7,7 @@ module RedHatConsulting_Utilities
 
       def initialize(handle = $evm)
         @handle = handle
-        @task = get_stp_task
+        @task = get_stp_task rescue nil
       end
 
       def log(level, msg, update_message = false)
