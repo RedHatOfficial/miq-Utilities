@@ -11,7 +11,12 @@
 #
 #   Related Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1647192
 #
-#   This method can be removed once the bugzilla is addressed.
+#   Additionally, we are overriding this method to allow integers as well as strings
+#   to be passed as extra vars to an Tower Job invocation.
+#
+#   Related Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=1659092
+#
+#   This method can be removed once these bugzillas are addressed.
 #
 #   This method should be updated if the base launch_ansible_job
 #   method in the MIQ domain is updates with CFME releases. 
@@ -90,7 +95,8 @@ module ManageIQ
                   key_list.each_with_object(ext_vars) do |key, hash|
                     # Override - update method to ensure that 'start_with?' will always operate on a string
                     if key.to_s.start_with?('param')
-                      match_data = ANSIBLE_VAR_REGEX.match(object[key])
+                      # Override - object[key] may not be string. Add 'to_s' to force string type
+                      match_data = ANSIBLE_VAR_REGEX.match(object[key].to_s)
                       hash[match_data[1].strip] ||= match_data[2] if match_data
                     else
                       # Override - update method to ensure that 'match' is called
