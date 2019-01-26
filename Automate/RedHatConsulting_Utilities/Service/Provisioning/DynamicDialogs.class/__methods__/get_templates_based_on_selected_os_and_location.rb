@@ -64,6 +64,7 @@ begin
   
   # invalid if no location tags selected
   location_tags.delete("null")
+  location_tags.delete("[]")
   if location_tags.empty?
     invalid_selection = true
     value << "Destination location(s) must be selected to determine valid destination providers."
@@ -80,7 +81,8 @@ begin
       tag = $evm.vmdb(:classification).find_by_name(provider_tag_name)
       $evm.log(:info, "provider_tag_name => '#{provider_tag_name}', tag => #{tag}") if @DEBUG
       invalid_selection = true
-      value << "Could not find Provider with Tag <#{tag.parent.description}: #{tag.description}>"
+      value << "Could not find Provider with Tag <#{tag.parent.description}: #{tag.description}>" unless tag.blank?
+      value << "Invalid location Tag provided: <#{provider_tag_name}>"                            if tag.blank?
     else
       providers_by_tag[provider_tag_name] = tagged_providers
     end
