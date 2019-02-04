@@ -227,5 +227,10 @@ begin
   # set the acquired IP
   $evm.object['acquired_ip_address'] = acquired_ip_address
   $evm.set_state_var(:acquired_ip_address, acquired_ip_address)
+
+  # set destination IP address to acquired IP address
+  $evm.object['destination_ip_address'] = acquired_ip_address
+  $evm.set_state_var(:destination_ip_address, acquired_ip_address)
+
   $evm.log(:info, "$evm.object['acquired_ip_address'] => #{$evm.object['acquired_ip_address']}") if @DEBUG
 end

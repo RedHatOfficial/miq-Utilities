@@ -29,9 +29,9 @@ module AutomationManagement
               log(:info, "Unable to determine VM IP address for Ansible Tower Inventory - no IP Addresses associated with VM.")
               return nil
             end
-            acquired_ip_address = get_param(:acquired_ip_address)
-            log(:info, "Aquired IP Address => #{acquired_ip_address}" )
-            ip_address = vm.ipaddresses.include?(acquired_ip_address) ?  acquired_ip_address : vm.ipaddresses.first
+            destination_ip = get_param(:destination_ip_address)
+            log(:info, "Host Destination IP Address => #{destination_ip}" )
+            ip_address = vm.ipaddresses.include?(destination_ip) ? destination_ip : vm.ipaddresses.first
             log(:info, "Discovered IP Address for Ansible Tower Inventory => #{ip_address}" )
             return ip_address
           end

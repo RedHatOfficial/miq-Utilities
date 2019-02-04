@@ -21,7 +21,7 @@ module RedHatConsulting_Utilities
               error("vm parameter not found") if vm.blank?
 
               # check to see if there is an expected destination ip
-              expected_ip = options[:destination_ip] || get_param(:destination_ip)
+              expected_ip = options[:destination_ip_address] || get_param(:destination_ip_address)
 
               # ensure VM IP addresses are set
               if vm.ipaddresses.nil? || vm.ipaddresses.empty?
