@@ -9,5 +9,7 @@ object:
     scope: instance
     language: ruby
     location: inline
+    embedded_methods:
+    - "/StdLib/Core/Core"
     options: {}
   inputs: []
