@@ -131,17 +131,24 @@ begin
     disk_size = disk_size.to_i
     error("Invalid Disk Size: #{disk_number}") if disk_size <= 0
     disk_size_kb = disk_size * (1024**2)
-  
-    $evm.log(:info, "vm           => #{vm.name}")      if @DEBUG
-    $evm.log(:info, "vendor       => #{vm.vendor}")    if @DEBUG
-    $evm.log(:info, "disk_number  => #{disk_number}")  if @DEBUG
-    $evm.log(:info, "disk_size    => #{disk_size}")    if @DEBUG
-    $evm.log(:info, "disk_size_kb => #{disk_size_kb}") if @DEBUG
+    current_disk_kb = vm.object_send("disk_#{disk_number}_size") / 1024
+    
+    $evm.log(:info, "vm              => #{vm.name}")         if @DEBUG
+    $evm.log(:info, "vendor          => #{vm.vendor}")       if @DEBUG
+    $evm.log(:info, "disk_number     => #{disk_number}")     if @DEBUG
+    $evm.log(:info, "disk_size       => #{disk_size}")       if @DEBUG
+    $evm.log(:info, "disk_size_kb    => #{disk_size_kb}")    if @DEBUG
+    $evm.log(:info, "current_disk_kb => #{current_disk_kb}") if @DEBUG
   
     # resize disk
     begin
-      disk_number -= 1 # Subtract 1 from the disk_number since VMware starts at 0 and CFME start at 1
-      resizeDisk(vm, disk_number, disk_size_kb)
+      if disk_size_kb <= current_disk_kb
+        $evm.log(:warn, "Requested disk size is: #{disk_size_kb} KiB which is smaller than existing size of #{current_disk_kb} KiB. Shrinking unsupported")
+        exit MIQ_WARN
+      else
+        disk_number -= 1 # Subtract 1 from the disk_number since VMware starts at 0 and CFME start at 1
+        resizeDisk(vm, disk_number, disk_size_kb)
+      end
     rescue => e
       if e.message =~ /VimFault/
         $evm.log(:warn, "Encountered VimFault: #{e.inspect}")
