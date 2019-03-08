@@ -76,7 +76,7 @@ module Automate
                   else
                     # if provider is RHV and CFME version 5.9 or above use VLAN profile ID
                     # else use vlan name
-                    if (template.ext_management_system.type =~ /Redhat/) && (@handle.root['miq_server'].version >= '5.9')
+                    if (template.ext_management_system.type =~ /Redhat/) && (Gem::Version.new(@handle.root['miq_server'].version) >= Gem::Version.new('5.9'))
                       vnic_profile_id = Automation::Infrastructure::VM::RedHat::Utils.new(template.ext_management_system).vnic_profile_id(provisioning_network_name)
                       @handle.log(:info, "prov.set_vlan: vnic_profile_id => #{vnic_profile_id}") if DEBUG
                       prov.set_vlan(vnic_profile_id)
