@@ -27,8 +27,22 @@ module RedHatConsulting_Utilities
       class Settings
         SETTINGS = {
             global: {
-                network_lookup_keys: %w(environment), #orderd list of CF tag names to use to lookup vlan names, _ separated
-                groups_can_order_for: %w(EvmGroup-super_administrator), #list of groups whose members can order services on behalf of others
+                #orderd list of CF tag names to use to lookup vlan names, _ separated
+                # This helps build the setting name for VLAN lookups. Format is as:
+                #    network_<template vendor>_key1_key2_..._keyN
+                # consider the following examples
+                #
+                # vmware templates:
+                # network_lookup_keys: %w(location environment)
+                #         ---> network_vmware_NYC_DEV OR network_vmware_PARIS_QA
+                # network_lookup_keys: %w(servicelevel location environment)
+                #         ---> network_vmware_GOLD_NYC_DEV OR network_vmware_BRONZE_PARIS_QA
+                #
+                network_lookup_keys: %w(environment),
+
+                #list of groups whose members can order services on behalf of others
+                groups_can_order_for: %w(EvmGroup-super_administrator),
+
                 vm_auto_start_suppress: true,
             },
             default: {
@@ -40,7 +54,33 @@ module RedHatConsulting_Utilities
                 retirement_warn: 14.days.to_i,
                 retirement_max_extensions: 3,
 
-            },
+                #############################
+                # Options for VM placement logic (for vmware_drs_cluster_best_fit_with_scope)
+                #
+                # @TODO: figure out how to have placement_filters here (implies eval(!))
+                # @TODO: Reconcile RHV placement logic & use same config
+                #
+                # storage_max_vms: 0 - ignore
+                #                  int - skip datastores with >x VMs
+                #
+                # storage_max_pct_used: 100 (default)
+                #                       0-100  - skip datastores with >x % used.
+                #
+                # storage_sort_order: ordered array of keys to sort for "best" host
+                #  0 or more of: :active_provisioning_vms, :free_space, :free_space_percentage, :random
+                #
+                # host_sort_order: ordered array of keys to sort for "best" datastore
+                #
+                # 0 or more of: :active_provioning_memory, :active_provioning_cpu, :current_memory_usage,
+                #          :current_memory_headroom, :current_cpu_usage, :random
+                #############################
+
+                storage_max_vms: 0,
+                storage_max_pct_used: 100,
+                host_sort_order: [:active_provioning_memory, :current_memory_headroom, :random],
+                storage_sort_order: [:active_provisioning_vms, :random],
+
+        },
             r901: {
                 network_vmware: 'dvs_0810_INF_VMS_PRD_HFLEX',
                 network_vmware_test: 'dvs_0820_Self_Prov_Test(10.43.181.x)',

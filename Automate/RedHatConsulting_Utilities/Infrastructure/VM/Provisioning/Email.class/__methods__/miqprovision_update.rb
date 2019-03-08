@@ -22,11 +22,8 @@ module RedHatConsulting_Utilities
 
             def main
               # get the miq_provision task
-              prov = @handle.root['miq_provision']
-              log(:info, "Provision:<#{prov.id}> Request:<#{prov.miq_provision_request.id}> Type:<#{prov.type}>") if @DEBUG
-              log(:info, "prov.attributes => {") if @DEBUG
-              prov.attributes.sort.each {|k, v| log(:info, "\t#{k} => #{v}")} if @DEBUG
-              log(:info, "}") if @DEBUG
+              prov = @handle.root['miq_provision_request'] || @handle.root['miq_provision']
+
               error("miq_provision object not provided") unless prov
 
               # determine to email addresses
@@ -100,7 +97,7 @@ module RedHatConsulting_Utilities
               log(:info, "requester_email => #{requester_email}") if @DEBUG
 
               # get owner email
-              vm = prov.vm
+              vm = prov.vm rescue nil
               owner = vm.owner unless vm.nil?
               owner_email = owner.email unless owner.nil?
               owner_email ||= request.options[:owner_email]
@@ -159,7 +156,7 @@ module RedHatConsulting_Utilities
               status = status.capitalize
 
               # get the VM
-              vm = prov.vm
+              vm = prov.vm rescue nil
 
               # get vm name
               vm_name = vm.name unless vm.nil?
@@ -225,6 +222,13 @@ module RedHatConsulting_Utilities
                 end
                 body += "</table>"
               end
+
+              # Send email
+              @handle.log("info", "Sending email to <#{to}> from <#{from}> subject: <#{subject}>") if @DEBUG
+              @handle.log("info", "Sending email body: #{body}")                                   if @DEBUG
+              @handle.execute(:send_email, to, from, subject, body)
+
+              @handle.log('info', "END: send_vm_provision_update_email") if @DEBUG
 
             end
 

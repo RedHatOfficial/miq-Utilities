@@ -19,25 +19,18 @@ module RedHatConsulting_Utilities
             class VmWareDrsClusterBestFitWithScope
               include RedHatConsulting_Utilities::StdLib::Core
 
-              STORAGE_MAX_VMS = 0
-              STORAGE_MAX_PCT_USED = 100
-
-              #############################
-              # Set host sort order here
-              # options: :active_provioning_memory, :active_provioning_cpu, :current_memory_usage,
-              #          :current_memory_headroom, :current_cpu_usage, :random
-              #############################
-              HOST_SORT_ORDER = [:active_provioning_memory, :current_memory_headroom, :random].freeze
-
-              #############################
-              # Set storage sort order here
-              # options: :active_provisioning_vms, :free_space, :free_space_percentage, :random
-              #############################
-              STORAGE_SORT_ORDER = [:active_provisioning_vms, :random].freeze
-
               def initialize(handle = $evm)
                 @handle = handle
                 @DEBUG  = false
+
+                @settings = RedHatConsulting_Utilities::StdLib::Core::Settings.new()
+                @region = @handle.root['miq_server'].region_number
+
+                @STORAGE_MAX_VMS      = @settings.get_setting(@region, :placement_storage_max_vms, 0)
+                @STORAGE_MAX_PCT_USED = @settings.get_setting(@region, :placement_storage_max_pct_used, 100)
+
+                @HOST_SORT_ORDER    = @settings.get_setting(@region, :placement_host_sort_oprder, [:active_provioning_memory, :current_memory_headroom, :random])
+                @STORAGE_SORT_ORDER = @settings.get_setting(@region, :placement_storage_sort_oprder, [:free_space, :active_provisioning_vms, :random])
               end
 
               def main
@@ -63,12 +56,12 @@ module RedHatConsulting_Utilities
 
                 storage_max_vms = @handle.object['storage_max_vms']
                 storage_max_vms = storage_max_vms.strip.to_i if storage_max_vms.is_a?(String) && !storage_max_vms.strip.empty?
-                storage_max_vms = STORAGE_MAX_VMS unless storage_max_vms.is_a?(Numeric)
+                storage_max_vms = @STORAGE_MAX_VMS unless storage_max_vms.is_a?(Numeric)
 
                 storage_max_pct_used = @handle.object['storage_max_pct_used']
                 storage_max_pct_used = storage_max_pct_used.strip.to_i if storage_max_pct_used.is_a?(String) &&
                                                                           !storage_max_pct_used.strip.empty?
-                storage_max_pct_used = STORAGE_MAX_PCT_USED unless storage_max_pct_used.is_a?(Numeric)
+                storage_max_pct_used = @STORAGE_MAX_PCT_USED unless storage_max_pct_used.is_a?(Numeric)
                 log(:info, "storage_max_vms:<#{storage_max_vms}> storage_max_pct_used:<#{storage_max_pct_used}>")
 
                 #############################
@@ -100,7 +93,7 @@ module RedHatConsulting_Utilities
                   #############################
 
                   sort_data = []
-                  log(:info, "Sorted host Order:<#{HOST_SORT_ORDER.inspect}> Results:<#{sort_data.inspect}>")
+                  log(:info, "Sorted host Order:<#{@HOST_SORT_ORDER.inspect}> Results:<#{sort_data.inspect}>")
                   active_prov_data = prov.check_quota(:active_provisions)
                   ems.hosts.each do |h|
                     #############################
@@ -119,7 +112,7 @@ module RedHatConsulting_Utilities
                     #############################
                     sort_data << sd = [[], h.name, h]
                     host_id = h.attributes['id'].to_i
-                    HOST_SORT_ORDER.each do |type|
+                    @HOST_SORT_ORDER.each do |type|
                       sd[0] << case type
                                  # Multiply values by (-1) to cause larger values to sort first
                                when :active_provioning_memory
@@ -266,7 +259,7 @@ module RedHatConsulting_Utilities
                   storages.each_with_index do |s, idx|
                     sort_data << sd = [[], s.name, idx]
                     storage_id = s.attributes['id'].to_i
-                    STORAGE_SORT_ORDER.each do |type|
+                    @STORAGE_SORT_ORDER.each do |type|
                       sd[0] << case type
                                when :free_space
                                  # Multiply values by (-1) to cause larger values to sort first
@@ -286,7 +279,7 @@ module RedHatConsulting_Utilities
                   end
 
                   sort_data.sort! { |a, b| a[0] <=> b[0] }
-                  log(:info, "Sorted storage Order:<#{STORAGE_SORT_ORDER.inspect}>  Results:<#{sort_data.inspect}>")
+                  log(:info, "Sorted storage Order:<#{@STORAGE_SORT_ORDER.inspect}>  Results:<#{sort_data.inspect}>")
                   selected_storage = sort_data.first
                   log(:info, "Selected Storage: <#{selected_storage}>")
                   unless selected_storage.nil?

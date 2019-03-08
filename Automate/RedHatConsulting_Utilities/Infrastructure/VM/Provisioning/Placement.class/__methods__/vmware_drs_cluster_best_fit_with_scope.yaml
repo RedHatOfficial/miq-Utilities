@@ -11,5 +11,6 @@ object:
     location: inline
     embedded_methods:
     - "/StdLib/Core/Core"
+    - "/StdLib/Settings/Settings"
     options: {}
   inputs: []
