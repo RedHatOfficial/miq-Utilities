@@ -76,12 +76,14 @@ end
 
 # Get all of the network configuration instances.
 #
-# @return Array of all of the network configuration instances
+# @return Array of all of the network configuration instances enabled for dialogs
 NETWORK_CONFIGURATION_URI = 'Infrastructure/Network/Configuration'.freeze
 def get_network_configurations()
-  network_instances = $evm.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") }
-  network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten]
-  
+  network_instances = $evm.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") if domain.enabled}
+  network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten.uniq]
+  # remove network instances that should not be displayed based on network config
+  network_instances.delete_if { |pattern, cfg| cfg['display_in_dialogs'].to_s == "false" }
+  $evm.log(:info, "Network Instances to Display => #{network_instances}" ) if @DEBUG
   return network_instances
 end
 
