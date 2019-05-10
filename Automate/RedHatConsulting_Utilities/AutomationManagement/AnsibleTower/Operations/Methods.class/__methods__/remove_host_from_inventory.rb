@@ -25,9 +25,9 @@ module AutomationManagement
             # Check if VM already exists in inventory
             begin
               host_id = tower_host_id(vm)
-            rescue
+            rescue => e
               log(:error, "Unable to determine if host [ #{vm_inventory_hostname} ] is in Ansible Tower Inventory [ #{@tower_inventory_name} ]")
-              error("Error making Ansible Tower API Call. #{e.to_s}")
+              automate_retry(10, "Error making Ansible Tower API Call. #{e.to_s}")
             end
             
             if host_id.nil?
@@ -44,9 +44,9 @@ module AutomationManagement
             
             begin
               tower_request(:post, api_path, payload)
-            rescue
+            rescue => e
               log(:error, "Unable to remove host [ #{vm_inventory_hostname} ] from Ansible Tower Inventory  [ #{@tower_inventory_name} ]")
-              error("Error making Ansible Tower API Call. #{e.to_s}")
+              automate_retry(10, "Error making Ansible Tower API Call. #{e.to_s}")
             end
 
             # Verify that the host has been remove from the inventory
@@ -54,7 +54,7 @@ module AutomationManagement
               host_present_in_inventory = vm_in_inventory?(vm)
             rescue => e
               log(:error, "Unable to determine if host [ #{vm_inventory_hostname} ] is in Ansible Tower Inventory [ #{@tower_inventory_name} ]")
-              error("Error making Ansible Tower API Call. #{e.to_s}")
+              automate_retry(10, "Error making Ansible Tower API Call. #{e.to_s}")
             end
             
             if host_present_in_inventory
