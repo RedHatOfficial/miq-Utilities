@@ -87,6 +87,10 @@ module RedHatConsulting_Utilities
       def get_complex_state_var(name)
         JSON.parse(@handle.get_state_var(name.to_sym))
       end
+      
+      def get_task_option_yaml_data(task, option)
+        task.get_option(option).nil? ? nil : YAML.load(task.get_option(option))
+      end
 
       # Useful in the rescue of service provisioning methods.
       # rescue => err
@@ -211,14 +215,25 @@ module RedHatConsulting_Utilities
       # @param seconds Number of seconds to wait before next retry
       # @param reason  Reason for the retry
       def automate_retry(seconds, reason)
-        $evm.root['ae_result'] = 'retry'
-        $evm.root['ae_retry_interval'] = "#{seconds.to_i}.seconds"
-        $evm.root['ae_reason'] = reason
+        @handle.root['ae_result'] = 'retry'
+        @handle.root['ae_retry_interval'] = "#{seconds.to_i}.seconds"
+        @handle.root['ae_reason'] = reason
 
-        $evm.log(:info, "Retrying #{@method} after #{seconds} seconds, because '#{reason}'") if @DEBUG
+        @handle.log(:info, "Retrying #{@method} after #{seconds} seconds, because '#{reason}'") if @DEBUG
         exit MIQ_OK
       end
       
+      # Set attributes to skip to specified next state
+      #
+      # @param message Reason for the skip
+      # @param next_state State to skip to
+      def skip_to_state(message, next_state)
+        log(:info, "#{message}. Skip to State <#{next_state}>")
+        @handle.root['ae_result']     = 'skip'
+        @handle.root['ae_next_state'] = next_state
+        exit MIQ_OK
+      end
+
       # Function for getting the current VM and associated options based on the vmdb_object_type.
       #
       # Supported vmdb_object_types
@@ -230,50 +245,128 @@ module RedHatConsulting_Utilities
       def get_vm_and_options()
         @handle.log(:info, "@handle.root['vmdb_object_type'] => '#{@handle.root['vmdb_object_type']}'.")
         case @handle.root['vmdb_object_type']
-          when 'miq_provision'
-            # get root object
-            miq_provision =  @handle.root['miq_provision']
+        when 'miq_provision'
+          # get root object
+          miq_provision =  @handle.root['miq_provision']
 
-            # get VM
-            vm = miq_provision.vm
+          # get VM
+          vm = miq_provision.vm
 
-            # get options
-            options = miq_provision.options
-            #merge the ws_values, dialog, top level options into one list to make it easier to search
-            options = options.merge(options[:ws_values]) if options[:ws_values]
-            options = options.merge(options[:dialog])    if options[:dialog]
-          when 'vm'
-            # get root objet & VM
-            vm = get_param(:vm)
+          # get options
+          options = miq_provision.options
+          #merge the ws_values, dialog, top level options into one list to make it easier to search
+          options = options.merge(options[:ws_values]) if options[:ws_values]
+          options = options.merge(options[:dialog])    if options[:dialog]
+        when 'vm'
+          # get root objet & VM
+          vm = get_param(:vm)
 
-            # get options
-            options =  @handle.root.attributes
-            #merge the ws_values, dialog, top level options into one list to make it easier to search
-            options = options.merge(options[:ws_values]) if options[:ws_values]
-            options = options.merge(options[:dialog])    if options[:dialog]
-          when 'automation_task'
-            # get root objet
-            automation_task =  @handle.root['automation_task']
+          # get options
+          options =  @handle.root.attributes
+          #merge the ws_values, dialog, top level options into one list to make it easier to search
+          options = options.merge(options[:ws_values]) if options[:ws_values]
+          options = options.merge(options[:dialog])    if options[:dialog]
+        when 'automation_task'
+          # get root objet
+          automation_task =  @handle.root['automation_task']
 
-            # get VM
-            vm  = get_param(:vm)
+          # get VM
+          vm  = get_param(:vm)
 
-            # get options
-            options = get_param(:options)
-            options = JSON.load(options)     if options && options.class == String
-            options = options.symbolize_keys if options
-            #merge the ws_values, dialog, top level options into one list to make it easier to search
-            options = options.merge(options[:ws_values]) if options[:ws_values]
-            options = options.merge(options[:dialog])    if options[:dialog]
-          else
-            error("Can not handle vmdb_object_type: #{@handle.root['vmdb_object_type']}")
-          end
+          # get options
+          options = get_param(:options)
+          options = JSON.load(options)     if options && options.class == String
+          options = options.symbolize_keys if options
+          #merge the ws_values, dialog, top level options into one list to make it easier to search
+          options = options.merge(options[:ws_values]) if options[:ws_values]
+          options = options.merge(options[:dialog])    if options[:dialog]
+        when 'service_template_provision_task'
+          task = @handle.root['service_template_provision_task']
 
-          # standerdize the option keys
-          options = options.symbolize_keys()
+          # if service task then no VM yet
+          vm = nil
 
-          return vm,options
+          # get options
+          options = get_task_option_yaml_data(task, :parsed_dialog_options)
+          options = options[0] if !options[0].nil?
+        else
+          error("Can not handle vmdb_object_type: #{@handle.root['vmdb_object_type']}")
         end
+
+        # standerdize the option keys
+        options = options.symbolize_keys()
+
+        return vm,options
+      end
+
+      # Create a Tag  Category if it does not already exist
+      #
+      # @param category     Tag Category to create
+      # @param description  Tag Category description.
+      #                     Optional
+      #                     Defaults to the `category`
+      # @param single_value True if a resource can only have one tag from this category,
+      #                     False if a resource can have multiple tags from this category.
+      #                     Optional.
+      #                     Defaults to `false`
+      #
+      # @source https://pemcg.gitbooks.io/mastering-automation-in-cloudforms-4-2-and-manage/content/using_tags_from_automate/chapter.html
+      def create_tag_category(category, description = nil, single_value = false)
+        category_name = to_tag_name(category)
+        unless @handle.execute('category_exists?', category_name)
+          @handle.execute('category_create',
+            :name => category_name,
+            :single_value => single_value,
+            :perf_by_tag => false,
+            :description => description || category)
+        end
+      end
+
+      # Gets all of the Tags in a given Tag Category
+      #
+      # @param category Tag Category to get all of the Tags for
+      #
+      # @return Hash of Tag names mapped to Tag descriptions
+      #
+      # @source https://pemcg.gitbooks.io/mastering-automation-in-cloudforms-4-2-and-manage/content/using_tags_from_automate/chapter.html#_getting_the_list_of_tags_in_a_category
+      def get_category_tags(category)
+        classification = @handle.vmdb(:classification).find_by_name(category)
+        tags = {}
+        @handle.vmdb(:classification).where(:parent_id => classification.id).each do |tag|
+          tags[tag.name] = tag.description
+        end
+
+        return tags
+      end
+
+
+      # Create a Tag in a given Category if it does not already exist
+      #
+      # @param category Tag Category to create the Tag in
+      # @param tag      Tag to create in the given Tag Category
+      #
+      # @source https://pemcg.gitbooks.io/mastering-automation-in-cloudforms-4-2-and-manage/content/using_tags_from_automate/chapter.html
+      def create_tag(category, tag)
+        create_tag_category(category)
+        tag_name = to_tag_name(tag)
+        unless @handle.execute('tag_exists?', category, tag_name)
+          @handle.execute('tag_create',
+            category,
+            :name => tag_name,
+            :description => tag)
+        end
+
+        return "#{category}/#{tag_name}"
+      end
+
+      # Takes a string and makes it a valid tag name
+      #
+      # @param str String to turn into a valid Tag name
+      #
+      # @return Given string transformed into a valid Tag name
+      def to_tag_name(str)
+        return str.downcase.gsub(/[^a-z0-9_]+/,'_')
+      end
 
     end
   end
