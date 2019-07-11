@@ -9,6 +9,7 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 * [Automate StdLib](#automate-stdlib)
 * [Install](#install)
 * [Unit Testing](#unittesting)
+* [Branches and Tags](#branches-and-tags)
 * [Contributors](#contributors)
 
 # Features
@@ -113,3 +114,12 @@ $ bundle exec rake
 or, e.g.,
 $ bundle exec rspec --format documentation --pattern spec/content/automate/RedHatConsulting_Utilities/**/*_spec.rb
 
+# Branches and Tags
+The master branch of this repoistory will aim to support the current CloudForms release.
+If breaking changes for previous CloudForms versions are introduced in Master, version specific branches and tags will be created for those previous versions, as long as those releases are still supported by Red Hat. The version-specific release branches will be no longer be maintained once that version of CloudForms is end of life.
+
+CloudForms Product Lifecycle Information:
+* https://access.redhat.com/support/policy/updates/cloudforms
+
+# Contributors
+https://github.com/RedHatOfficial/miq-Utilities/graphs/contributors
