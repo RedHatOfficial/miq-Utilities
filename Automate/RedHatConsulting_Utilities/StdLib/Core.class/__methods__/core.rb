@@ -87,7 +87,7 @@ module RedHatConsulting_Utilities
       def get_complex_state_var(name)
         JSON.parse(@handle.get_state_var(name.to_sym))
       end
-      
+
       def get_task_option_yaml_data(task, option)
         task.get_option(option).nil? ? nil : YAML.load(task.get_option(option))
       end
@@ -200,15 +200,49 @@ module RedHatConsulting_Utilities
         rbac_array
       end
 
+      # Checks if the object is eligible for use, based on @rbac_array and if not archived & not orphaned
+      # @param obj MIQ taggable object to verify against RBAC
       def object_eligible?(obj)
-        return false if obj.archived || obj.orphaned
-        @rbac_array.each do |rbac_hash|
-          rbac_hash.each do |rbac_category, rbac_tags|
-            Array.wrap(rbac_tags).each { |rbac_tag_entry| return false unless obj.tagged_with?(rbac_category, rbac_tag_entry) }
+        return false if (obj.respond_to?(:archived) && obj.archived) || (obj.respond_to?(:orphaned) && obj.orphaned)
+        object_matches_tag_filter?(obj, @rbac_array)
+      end
+
+      # Checks the given object matches by tag against the provided tag_filter.
+      #
+      # This requires that the object has each tag value in each tag category to pass
+      #
+      # @param obj MIQ taggable object to check
+      # @param hash tag_filter hash in the format of [ {'cat1'=>'val1'}, {'cat1'=> 'val2'}, {'cat2' =>'val3'}]
+      def object_matches_tag_filter?(obj, tag_filter)
+        tag_filter.each do |filter_hash|
+          filter_hash.each do |filter_category, filter_tags|
+            Array.wrap(filter_tags).each do |filter_tag_entry|
+              return false unless obj.tagged_with?(filter_category.to_s, filter_tag_entry)
+            end
           end
           true
         end
       end
+
+      # Checks the given object matches by tag against the provided tag_filter
+      #
+      # This requires that the object has any at least one tag value in each tag category
+      #
+      # @param obj MIQ taggable object to check
+      # @param hash tag_filter hash in the format of [ {'cat1'=>'val1'}, {'cat1'=> 'val2'}, {'cat2' =>'val3'}]
+      def object_matches_any_tag_filter?(obj, tag_filter)
+        tag_filter.each do |filter_hash|
+          filter_hash.each do |filter_category, filter_tags|
+            category_ok = false
+            Array.wrap(filter_tags).each do |filter_tag_entry|
+              category_ok = true if obj.tagged_with?(filter_category.to_s, filter_tag_entry)
+            end
+            return false unless category_ok
+          end
+          true
+        end
+      end
+
 
       # Perform a method retry for the given reason
       #
@@ -222,14 +256,14 @@ module RedHatConsulting_Utilities
         @handle.log(:info, "Retrying #{@method} after #{seconds} seconds, because '#{reason}'") if @DEBUG
         exit MIQ_OK
       end
-      
+
       # Set attributes to skip to specified next state
       #
       # @param message Reason for the skip
       # @param next_state State to skip to
       def skip_to_state(message, next_state)
         log(:info, "#{message}. Skip to State <#{next_state}>")
-        @handle.root['ae_result']     = 'skip'
+        @handle.root['ae_result'] = 'skip'
         @handle.root['ae_next_state'] = next_state
         exit MIQ_OK
       end
@@ -247,7 +281,7 @@ module RedHatConsulting_Utilities
         case @handle.root['vmdb_object_type']
         when 'miq_provision'
           # get root object
-          miq_provision =  @handle.root['miq_provision']
+          miq_provision = @handle.root['miq_provision']
 
           # get VM
           vm = miq_provision.vm
@@ -256,30 +290,30 @@ module RedHatConsulting_Utilities
           options = miq_provision.options
           #merge the ws_values, dialog, top level options into one list to make it easier to search
           options = options.merge(options[:ws_values]) if options[:ws_values]
-          options = options.merge(options[:dialog])    if options[:dialog]
+          options = options.merge(options[:dialog]) if options[:dialog]
         when 'vm'
           # get root objet & VM
           vm = get_param(:vm)
 
           # get options
-          options =  @handle.root.attributes
+          options = @handle.root.attributes
           #merge the ws_values, dialog, top level options into one list to make it easier to search
           options = options.merge(options[:ws_values]) if options[:ws_values]
-          options = options.merge(options[:dialog])    if options[:dialog]
+          options = options.merge(options[:dialog]) if options[:dialog]
         when 'automation_task'
           # get root objet
-          automation_task =  @handle.root['automation_task']
+          automation_task = @handle.root['automation_task']
 
           # get VM
-          vm  = get_param(:vm)
+          vm = get_param(:vm)
 
           # get options
           options = get_param(:options)
-          options = JSON.load(options)     if options && options.class == String
+          options = JSON.load(options) if options && options.class == String
           options = options.symbolize_keys if options
           #merge the ws_values, dialog, top level options into one list to make it easier to search
           options = options.merge(options[:ws_values]) if options[:ws_values]
-          options = options.merge(options[:dialog])    if options[:dialog]
+          options = options.merge(options[:dialog]) if options[:dialog]
         when 'service_template_provision_task'
           task = @handle.root['service_template_provision_task']
 
@@ -296,7 +330,7 @@ module RedHatConsulting_Utilities
         # standerdize the option keys
         options = options.symbolize_keys()
 
-        return vm,options
+        return vm, options
       end
 
       # Create a Tag  Category if it does not already exist
@@ -315,10 +349,10 @@ module RedHatConsulting_Utilities
         category_name = to_tag_name(category)
         unless @handle.execute('category_exists?', category_name)
           @handle.execute('category_create',
-            :name => category_name,
-            :single_value => single_value,
-            :perf_by_tag => false,
-            :description => description || category)
+                          :name => category_name,
+                          :single_value => single_value,
+                          :perf_by_tag => false,
+                          :description => description || category)
         end
       end
 
@@ -351,9 +385,9 @@ module RedHatConsulting_Utilities
         tag_name = to_tag_name(tag)
         unless @handle.execute('tag_exists?', category, tag_name)
           @handle.execute('tag_create',
-            category,
-            :name => tag_name,
-            :description => tag)
+                          category,
+                          :name => tag_name,
+                          :description => tag)
         end
 
         return "#{category}/#{tag_name}"
@@ -365,7 +399,17 @@ module RedHatConsulting_Utilities
       #
       # @return Given string transformed into a valid Tag name
       def to_tag_name(str)
-        return str.downcase.gsub(/[^a-z0-9_]+/,'_')
+        return str.downcase.gsub(/[^a-z0-9_]+/, '_')
+      end
+
+      # Converts duration of seconds to HH:MM:SS
+      #
+      # @param seconds Number of seconds passed
+      #
+      # @return duration converted to HH:MM:SS
+      def seconds_to_time(seconds)
+        seconds = seconds.round
+        [seconds / 3600, seconds / 60 % 60, seconds % 60].map { |t| t.to_s.rjust(2, '0') }.join(':')
       end
 
     end

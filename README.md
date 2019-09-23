@@ -7,6 +7,7 @@ ManageIQ Automate Domain of shared utilities to be used by other ManageIQ domain
 * [Features](#features)
 * [Automate](#automate)
 * [Automate StdLib](#automate-stdlib)
+* [Automate Settings](#automate-settings)
 * [Install](#install)
 * [Unit Testing](#unittesting)
 * [Branches and Tags](#branches-and-tags)
@@ -82,6 +83,35 @@ and to be suitbale for inclusion as "Embedded Methods".
 
 See: https://cloudformsblog.redhat.com/2018/04/17/embedded-methods/ for
 conceptual background.
+
+## Automate Settings
+
+This project now includes a new mechanism for storing and accessing configuration settings. This has some
+advantages over traditional processes for configuration (instance variables or constants within a method). The
+settings can all be stored in one location, and being code, edited in something more featureful than a text box.
+The settings values can be any ruby data structure directly, and do not require juggling between yaml or json as
+commonly happens. Additionally, as the settings are grouped into global/default/region, then one can configure
+common and region-specific settings in a single place, for multi region deployments, useful for either a
+replication setup, or a dev/prod envionment split, pulling code from one git source.
+
+/StdLib/Settings/settings provides the core lookup functionality.
+/StdLib/Settings/settingsstore holds setting values.
+
+
+### Settings over multiple Domains
+
+To leverage your own custom settings, one can simply copy settings.rb up to a top priority domain, and edit
+it per norm. However, to isolate out ones own domain's settings, there is a mechanism ot merge in settings from
+different files.
+
+Using the commented code in settings.rb as a template, create a new (ruby) class that extends RedHatConsulting_Utilities::StdLib::Core::Settings
+and has a PRIORITY and SETTINGS class values.
+
+Copy our settings.rb to a high priority domain. Configure it to have embedded methods of all other settings.rb you wish
+to include (but not the one from this project). Ordered inclusion is impossible to guarentee with the UX currently,
+the PRIORITY setting, however, is honoured in merging the hashes. In practice, you are going to want to use
+non-overlapping key values, or manually reconcile  the desired values in the settings.rb in the high priority domain.
+
 
 # Provision Dialogs
 

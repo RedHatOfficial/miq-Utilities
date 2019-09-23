@@ -3,9 +3,9 @@ object_type: method
 version: 1.0
 object:
   attributes:
-    name: process_telemetry_data
-    display_name: ProcessTelemetryData
-    description: 
+    name: infra_best_fit_with_scope
+    display_name:
+    description:
     scope: instance
     language: ruby
     location: inline

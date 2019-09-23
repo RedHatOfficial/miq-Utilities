@@ -9,5 +9,7 @@ object:
     scope: instance
     language: ruby
     location: inline
+    embedded_methods:
+    - "/RedHatConsulting_Utilities/StdLib/Settings/settingsstore"
     options: {}
   inputs: []
