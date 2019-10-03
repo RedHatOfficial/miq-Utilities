@@ -2,239 +2,115 @@
 #
 # @set retired_ip_address String IP address retired from the DDI provider for the network of the provided VM.
 #
-@DEBUG = false
 
-DDI_PROVIDERS_URI = 'Infrastructure/Network/DDIProviders'.freeze
+module RedHatConsulting_Utilities
+  module Infrastructure
+    module Network
+      module Operations
+        module Methods
+          class ReleaseIPAddress
 
-def dump_object(object_string, object)
-  $evm.log("info", "Listing #{object_string} Attributes:") 
-  object.attributes.sort.each { |k, v| $evm.log("info", "\t#{k}: #{v}") }
-  $evm.log("info", "===========================================") 
-end
+            include RedHatConsulting_Utilities::StdLib::Core
+            DDI_PROVIDERS_URI = 'Infrastructure/Network/DDIProviders'.freeze
 
-def dump_current
-  $evm.log("info", "Listing Current Object Attributes:") 
-  $evm.current.attributes.sort.each { |k, v| $evm.log("info", "\t#{k}: #{v}") }
-  $evm.log("info", "===========================================") 
-end
+            def initialize(handle = $evm)
+              @handle = handle
+              @DEBUG = false
+            end
 
-def dump_root
-  $evm.log("info", "Listing Root Object Attributes:") 
-  $evm.root.attributes.sort.each { |k, v| $evm.log("info", "\t#{k}: #{v}") }
-  $evm.log("info", "===========================================") 
-end
+            def main
+              begin
+                dump_root if @DEBUG
 
-# Log an error and exit.
-#
-# @param msg Message to error with
-def error(msg)
-  $evm.log(:error, msg)
-  $evm.root['ae_result'] = 'error'
-  $evm.root['ae_reason'] = msg.to_s
-  exit MIQ_STOP
-end
+                vm,options = get_vm_and_options()
 
-# Notify and log a message.
-#
-# @param level   Symbol             Level of the notification and log message
-# @param message String             Message to notify and log
-# @param subject ActiveRecord::Base Subject of the notification
-def notify(level, message, subject)
-  $evm.create_notification(:level => level, :message => message, :subject => subject)
-  log_level = case level
-    when :warning
-      :warn
-    else
-      level
-  end
-  $evm.log(log_level, message)
-end
+                # NOTE: this is hard coded to the first network interface because can't
+                #       decide how to determine which network interfaces to release the IPs for...
+                #
+                # TODO: don't hard code this to first interface
+                network = vm.hardware.nics[0].lan
+                log(:info, "Releaseing IP Address on network <#{network}> for VM <#{vm.name}>") if @DEBUG
 
-# There are many ways to attempt to pass parameters in Automate.
-# This function checks all of them in priorty order as well as checking for symbol or string.
-#
-# Order:
-#   1. Inputs
-#   2. Current
-#   3. Object
-#   4. Root
-#   5. State
-#
-# @return Value for the given parameter or nil if none is found
-def get_param(param)  
-  # check if inputs has been set for given param
-  param_value ||= $evm.inputs[param.to_sym]
-  param_value ||= $evm.inputs[param.to_s]
-  
-  # else check if current has been set for given param
-  param_value ||= $evm.current[param.to_sym]
-  param_value ||= $evm.current[param.to_s]
- 
-  # else cehck if current has been set for given param
-  param_value ||= $evm.object[param.to_sym]
-  param_value ||= $evm.object[param.to_s]
-  
-  # else check if param on root has been set for given param
-  param_value ||= $evm.root[param.to_sym]
-  param_value ||= $evm.root[param.to_s]
-  
-  # check if state has been set for given param
-  param_value ||= $evm.get_state_var(param.to_sym)
-  param_value ||= $evm.get_state_var(param.to_s)
+                # TODO: figure out some workaround to this issue or do something else here.
+                # deal with https://bugzilla.redhat.com/show_bug.cgi?id=1572917
+                if network.nil?
+                  log(
+                    :warn,
+                    "Could not determine Network for VM <#{vm.name} to release IP address due to " +
+                      "https://bugzilla.redhat.com/show_bug.cgi?id=1572917. IP address will need to be manually released. " +
+                      "Ignoring & Skipping."
+                    )
+                  exit MIQ_OK
+                end
 
-  $evm.log(:info, "{ '#{param}' => '#{param_value}' }") if @DEBUG
-  return param_value
-end
+                # find matching network configuration
+                vm_network_name            = network.name
+                network_configurations     = get_network_configurations()
+                network_configuration      = nil
+                network_configuration_name = nil
+                log(:info, "network_configurations => #{network_configurations}") if @DEBUG
+                network_configurations.each do |configuration_name, configuraiton|
+                  if vm_network_name =~ /#{configuration_name}/
+                    network_configuration_name = configuration_name
+                    network_configuration      = configuraiton
+                    break
+                  end
+                end
+                log(:info, "vm_network_name            => #{vm_network_name}")            if @DEBUG
+                log(:info, "network_configuration_name => #{network_configuration_name}") if @DEBUG
+                log(:info, "network_configuration      => #{network_configuration}")      if @DEBUG
 
-# Function for getting the current VM and associated options based on the vmdb_object_type.
-#
-# Supported vmdb_object_types
-#   * miq_provision
-#   * vm
-#   * automation_task
-#
-# @return vm,options
-def get_vm_and_options()
-  $evm.log(:info, "$evm.root['vmdb_object_type'] => '#{$evm.root['vmdb_object_type']}'.")
-  case $evm.root['vmdb_object_type']
-    when 'miq_provision'
-      # get root object
-      $evm.log(:info, "Get VM and dialog attributes from $evm.root['miq_provision']") if @DEBUG
-      miq_provision = $evm.root['miq_provision']
-      dump_object('miq_provision', miq_provision) if @DEBUG
-      
-      # get VM
-      vm = miq_provision.vm
-    
-      # get options
-      options = miq_provision.options
-      #merge the ws_values, dialog, top level options into one list to make it easier to search
-      options = options.merge(options[:ws_values]) if options[:ws_values]
-      options = options.merge(options[:dialog])    if options[:dialog]
-    when 'vm'
-      # get root objet & VM
-      $evm.log(:info, "Get VM from paramater and dialog attributes form $evm.root") if @DEBUG
-      vm = get_param(:vm)
-      dump_object('vm', vm) if @DEBUG
-    
-      # get options
-      options = $evm.root.attributes
-      #merge the ws_values, dialog, top level options into one list to make it easier to search
-      options = options.merge(options[:ws_values]) if options[:ws_values]
-      options = options.merge(options[:dialog])    if options[:dialog]
-    when 'automation_task'
-      # get root objet
-      $evm.log(:info, "Get VM from paramater and dialog attributes form $evm.root") if @DEBUG
-      automation_task = $evm.root['automation_task']
-      dump_object('automation_task', automation_task) if @DEBUG
-      
-      # get VM
-      vm  = get_param(:vm)
-      
-      # get options
-      options = get_param(:options)
-      options = JSON.load(options)     if options && options.class == String
-      options = options.symbolize_keys if options
-      #merge the ws_values, dialog, top level options into one list to make it easier to search
-      options = options.merge(options[:ws_values]) if options[:ws_values]
-      options = options.merge(options[:dialog])    if options[:dialog]
-    else
-      error("Can not handle vmdb_object_type: #{$evm.root['vmdb_object_type']}")
-  end
-  
-  # standerdize the option keys
-  options = options.symbolize_keys()
-  
-  return vm,options
-end
+                log(:warn, "Could not find network configuration for VM network <#{vm_network_name}>. Skipping release IP.") if network_configuration.nil?
 
-# Get all of the network configuration instances.
-#
-# @return Array of all of the network configuration instances
-NETWORK_CONFIGURATION_URI = 'Infrastructure/Network/Configuration'.freeze
-def get_network_configurations()
-  network_instances = $evm.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") }
-  network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten]
-  
-  return network_instances
-end
+                # determine the DDI provider
+                ddi_provider = network_configuration['network_ddi_provider'] if network_configuration
+                log(:info, "ddi_provider => #{ddi_provider}") if @DEBUG
 
-begin
-  vm,options = get_vm_and_options()
-  
-  # NOTE: this is hard coded to the first network interface because can't
-  #       decide how to determine which network interfaces to release the IPs for...
-  #
-  # TODO: don't hard code this to first interface
-  network = vm.hardware.nics[0].lan
-  
-  # TODO: figure out some workaround to this issue or do something else here.
-  # deal with https://bugzilla.redhat.com/show_bug.cgi?id=1572917
-  if network.nil?
-    $evm.log(
-      :warn,
-      "Could not determine Network for VM <#{vm.name} to release IP address due to " +
-       "https://bugzilla.redhat.com/show_bug.cgi?id=1572917. IP address will need to be manually released. " +
-       "Ignoring & Skipping."
-    )
-    exit MIQ_OK
-  end
-  
-  # find matching network configuration
-  vm_network_name            = network.name
-  network_configurations     = get_network_configurations()
-  network_configuration      = nil
-  network_configuration_name = nil
-  $evm.log(:info, "network_configurations => #{network_configurations}") if @DEBUG
-  network_configurations.each do |configuration_name, configuraiton|
-    if vm_network_name =~ /#{configuration_name}/
-      network_configuration_name = configuration_name
-      network_configuration      = configuraiton
-      break
+                if !ddi_provider.blank?
+                  # instantiate instance to aquire IP
+                  begin
+                    log(:info, "Release IP address using DDI Provider <#{ddi_provider}>") if @DEBUG
+
+                    @handle.root['network_name']               = vm_network_name
+                    @handle.root['network_configuration_name'] = network_configuration_name
+                    @handle.instantiate("#{DDI_PROVIDERS_URI}/#{ddi_provider}#release_ip_address")
+                    released_ip_address = get_param(:released_ip_address)
+
+                    log(:info, "Released IP address <#{released_ip_address}> using DDI Provider <#{ddi_provider}>") if @DEBUG
+                    ensure
+                    success = @handle.root['ae_result'] == nil || $evm.root['ae_result'] == 'ok'
+                    reason  = @handle.root['ae_reason'] if !success
+
+                    # clean up root
+                    @handle.root['ae_result'] = nil
+                    @handle.root['ae_reason'] = nil
+
+                    # clean up after call
+                    @handle.root['network_name']               = nil
+                    @handle.root['network_configuration_name'] = nil
+                    @handle.root['released_ip_address']        = nil
+
+                    @handle.root['ae_reason'] = "Released IP address <#{released_ip_address}>"
+                  end
+                else
+                  @handle.root['ae_reason'] = "Can not retire IP for VM <#{vm.name}>, no DDI Provider found for Network <#{vm_network_name}>."
+                  @handle.root['ae_level']  = :warning
+                end
+
+                # set the released IP
+                @handle.object['released_ip_address'] = released_ip_address
+                @handle.set_state_var(:released_ip_address, released_ip_address)
+                @handle.root['ae_result'] = 'ok'
+              end
+            end
+
+          end
+        end
+      end
     end
   end
-  $evm.log(:info, "vm_network_name            => #{vm_network_name}")            if @DEBUG
-  $evm.log(:info, "network_configuration_name => #{network_configuration_name}") if @DEBUG
-  $evm.log(:info, "network_configuration      => #{network_configuration}")      if @DEBUG
-  
-  $evm.log(:warn, "Could not find network configuration for VM network <#{vm_network_name}>. Skipping release IP.") if network_configuration.nil?
+end
 
-  # determine the DDI provider
-  ddi_provider = network_configuration['network_ddi_provider'] if network_configuration
-  $evm.log(:info, "ddi_provider => #{ddi_provider}") if @DEBUG
-  
-  if !ddi_provider.blank?
-    # instantiate instance to aquire IP
-    begin
-      $evm.log(:info, "Release IP address using DDI Provider <#{ddi_provider}>") if @DEBUG
-    
-      $evm.root['network_name']               = vm_network_name
-      $evm.root['network_configuration_name'] = network_configuration_name
-      $evm.instantiate("#{DDI_PROVIDERS_URI}/#{ddi_provider}#release_ip_address")
-      released_ip_address = get_param(:released_ip_address)
-    
-      $evm.log(:info, "Released IP address <#{released_ip_address}> using DDI Provider <#{ddi_provider}>") if @DEBUG
-    ensure
-      success = $evm.root['ae_result'] == nil || $evm.root['ae_result'] == 'ok'
-      reason  = $evm.root['ae_reason'] if !success
-    
-      # clean up root
-      $evm.root['ae_result'] = nil
-      $evm.root['ae_reason'] = nil
-      
-      # clean up after call
-      $evm.root['network_name']               = nil
-      $evm.root['network_configuration_name'] = nil
-      $evm.root['released_ip_address']        = nil
-      
-      $evm.root['ae_reason'] = "Released IP address <#{released_ip_address}>"
-    end
-  else
-    $evm.root['ae_reason'] = "Can not retire IP for VM <#{vm.name}>, no DDI Provider found for Network <#{vm_network_name}>."
-    $evm.root['ae_level']  = :warning
-  end
-  
-  # set the released IP
-  $evm.object['released_ip_address'] = released_ip_address
-  $evm.root['ae_result'] = 'ok'
+if __FILE__ == $PROGRAM_NAME
+  RedHatConsulting_Utilities::Infrastructure::Network::Operations::Methods::ReleaseIPAddress.new.main()
 end

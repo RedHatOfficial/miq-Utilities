@@ -26,7 +26,7 @@ module Integration
         validate_tower_configuration
         log(:info, "Resolved Ansible Tower Configuration URI: #{@tower_config.name}") if @DEBUG
         @tower_inventory_name  = @tower_config['tower_inventory_name']
-        @tower_inventory_id    = determine_tower_inventory_id
+        @tower_inventory_id = nil
       end
 
       def validate_tower_configuration
@@ -100,11 +100,12 @@ module Integration
 
       # Determine Internal Ansible Tower Inventory ID based on Tower Inventory Name
       def determine_tower_inventory_id
+        return  @tower_inventory_id if @tower_inventory_id.present?
         api_path = "inventories?name=#{CGI.escape(@tower_inventory_name)}"
         inventory_result = tower_request(:get, api_path)
         inventory_id = inventory_result['results'].first['id'] rescue nil
         error( "Unable to determine Ansible Tower Inventory ID from Inventory Name [ #{@tower_inventory_name} ]") if inventory_id.nil?
-        log(:info, "Inventory ID determined from Inventory name: [ #{@tower_inventory_name} ] --> ID: [ #{@tower_inventory_id} ]") if @DEBUG
+        log(:info, "Inventory ID determined from Inventory name: [ #{@tower_inventory_name} ] --> ID: [ #{inventory_id} ]") if @DEBUG
         return inventory_id
       end
 
@@ -113,6 +114,7 @@ module Integration
       #
       # @param vm object
       def vm_in_inventory?( vm )
+        @tower_inventory_id = determine_tower_inventory_id
         api_path = "inventories/#{@tower_inventory_id}/hosts?name=#{inventory_hostname( vm )}"
         result = tower_request(:get, api_path)
         return result['count'] != 0
@@ -123,8 +125,9 @@ module Integration
       #
       # @param vm object
       def tower_host_id( vm )
-        api_path = "inventories/#{@tower_inventory_id}/hosts?name=#{inventory_hostname( vm )}"
-        result = tower_request(:get, api_path)
+        @tower_inventory_id = determine_tower_inventory_id
+        api_path            = "inventories/#{@tower_inventory_id}/hosts?name=#{inventory_hostname( vm )}"
+        result              = tower_request(:get, api_path)
         result['count'] != 0 ? result['results'].first['id'] : nil
       end
       

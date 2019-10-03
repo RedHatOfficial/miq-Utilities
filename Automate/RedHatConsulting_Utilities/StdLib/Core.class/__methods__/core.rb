@@ -299,7 +299,12 @@ module RedHatConsulting_Utilities
           options = @handle.root.attributes
           #merge the ws_values, dialog, top level options into one list to make it easier to search
           options = options.merge(options[:ws_values]) if options[:ws_values]
-          options = options.merge(options[:dialog]) if options[:dialog]
+          options = options.merge(options[:dialog])    if options[:dialog]
+        when 'vm_retire_task'
+          vm_retire_task = $evm.root['vm_retire_task']
+          dump_object('vm_retire_task', vm_retire_task) if @DEBUG
+          vm = get_param(:vm)
+          options = vm_retire_task['options']
         when 'automation_task'
           # get root objet
           automation_task = @handle.root['automation_task']
@@ -313,7 +318,7 @@ module RedHatConsulting_Utilities
           options = options.symbolize_keys if options
           #merge the ws_values, dialog, top level options into one list to make it easier to search
           options = options.merge(options[:ws_values]) if options[:ws_values]
-          options = options.merge(options[:dialog]) if options[:dialog]
+          options = options.merge(options[:dialog])    if options[:dialog]
         when 'service_template_provision_task'
           task = @handle.root['service_template_provision_task']
 
@@ -328,9 +333,19 @@ module RedHatConsulting_Utilities
         end
 
         # standerdize the option keys
-        options = options.symbolize_keys()
+        options = options.symbolize_keys() if options.present?
 
         return vm, options
+      end
+
+      # Get all of the network configuration instances.
+      #
+      # @return Array of all of the network configuration instances
+      NETWORK_CONFIGURATION_URI = 'Infrastructure/Network/Configuration'.freeze
+      def get_network_configurations()
+        network_instances = @handle.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") }
+        network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten]
+        return network_instances
       end
 
       # Create a Tag  Category if it does not already exist
