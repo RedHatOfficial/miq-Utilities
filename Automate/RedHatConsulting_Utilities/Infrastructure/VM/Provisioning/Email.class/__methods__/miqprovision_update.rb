@@ -21,37 +21,44 @@ module RedHatConsulting_Utilities
             end
 
             def main
-              # get the miq_provision task
-              prov = @handle.root['miq_provision_request'] || @handle.root['miq_provision']
+              begin
+                # get the miq_provision task
+                prov = @handle.root['miq_provision_request'] || @handle.root['miq_provision']
 
-              error("miq_provision object not provided") unless prov
+                error("miq_provision object not provided") unless prov
 
-              # determine to email addresses
-              to_email_addresses = determine_to_email_addresses(prov)
-              to_email_addresses = to_email_addresses.join(';')
+                # determine to email addresses
+                to_email_addresses = determine_to_email_addresses(prov)
+                to_email_addresses = to_email_addresses.join(';')
 
-              # determine the CFME/ManageIQ hostname
-              cfme_hostname = determine_cfme_hostname()
+                # determine the CFME/ManageIQ hostname
+                cfme_hostname = determine_cfme_hostname()
 
-              # determine from email address
-              from_email_address = determine_from_email_address(cfme_hostname)
+                # determine from email address
+                from_email_address = determine_from_email_address(cfme_hostname)
 
-              # get the VM provision update message
-              update_message = get_param(:vm_provision_update_message)
-              update_message ||= prov.miq_request.try(:user_message)
-              update_message ||= 'None'
+                # get the VM provision update message
+                update_message = get_param(:vm_provision_update_message)
+                update_message ||= prov.miq_request.try(:user_message)
+                update_message ||= 'None'
 
-              # get current VM provisioning status
-              vm_current_provision_ae_result = get_param(:vm_current_provision_ae_result)
+                # get current VM provisioning status
+                vm_current_provision_ae_result = get_param(:vm_current_provision_ae_result)
 
-              # send the email
-              unless to_email_addresses.blank?
-                send_vm_provision_update_email(prov, to_email_addresses, from_email_address, update_message, vm_current_provision_ae_result, cfme_hostname)
-              else
-                warn_message = "No one to send VM Provision Update email to. Request: #{prov.miq_provision_request.id}"
-                log(:warn, warn_message)
+                # send the email
+                unless to_email_addresses.blank?
+                  send_vm_provision_update_email(prov, to_email_addresses, from_email_address, update_message, vm_current_provision_ae_result, cfme_hostname)
+                else
+                  warn_message = "No one to send VM Provision Update email to. Request: #{prov.miq_provision_request.id}"
+                  log(:warn, warn_message)
+                  @handle.create_notification(:level => 'warning',
+                    :message => warn_message)
+                end
+              rescue => err
+                log(:error, "Unable to send email: [#{err}]\n#{err.backtrace.join('\n')}" )
                 @handle.create_notification(:level => 'warning',
-                                            :message => warn_message)
+                                            :message => "Error sending provisioning update email. See automation logs for details.")
+                exit MIQ_WARN
               end
             end
 

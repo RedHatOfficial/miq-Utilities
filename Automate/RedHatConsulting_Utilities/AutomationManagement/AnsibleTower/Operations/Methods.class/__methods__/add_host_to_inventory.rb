@@ -46,7 +46,7 @@ module AutomationManagement
             begin
               host_id = tower_host_id(vm)
             rescue => e
-              log(:error, "Unable to determine if host is in Ansible Tower Inventory [ #{@tower_inventory_name} ]")
+              log(:error, "Unable to determine if host is in Ansible Tower Inventory [ #{@tower_inventory_name} ]. #{e.to_s}")
               automate_retry(10, "Error making Ansible Tower API Call. #{e.to_s}")
             end
             
@@ -72,7 +72,7 @@ module AutomationManagement
             begin
               tower_request(host_management_action, api_path, payload)
             rescue => e
-              log(:error, "Unable to add host [ #{vm_inventory_hostname} ] to Ansible Tower inventory [ #{@tower_inventory_name} ]")
+              log(:error, "Unable to add host [ #{vm_inventory_hostname} ] to Ansible Tower inventory [ #{@tower_inventory_name} ]. #{e.to_s}")
               automate_retry(10, "Error making Ansible Tower API Call: #{e.to_s}")
             end
 
@@ -80,14 +80,14 @@ module AutomationManagement
             begin
             host_present_in_inventory = vm_in_inventory?(vm)
             rescue => e
-              log(:error, "Unable to determine if host [ #{vm_inventory_hostname} ] is in Ansible Tower Inventory [ #{@tower_inventory_name} ]")
+              log(:error, "Unable to determine if host [ #{vm_inventory_hostname} ] is in Ansible Tower Inventory [ #{@tower_inventory_name} ]. #{e.to_s}")
               automate_retry(10, "Error making Ansible Tower API Call: #{e.to_s}")
             end
               
             if !host_present_in_inventory
               error("Failed to add #{vm_inventory_hostname} to Ansible Inventory [ #{@tower_inventory_name} ].")
             end
-            @handle.log(:info, "VM #{vm_inventory_hostname} with IP address #{vm_ip_address} successfully added to Ansible Tower inventory [ #{@tower_inventory_name} ]")
+            @handle.log(:info, "VM #{vm_inventory_hostname} with IP address #{vm_ip_address} successfully added to Ansible Tower inventory [ #{@tower_inventory_name} ].")
             exit MIQ_OK
           end
           

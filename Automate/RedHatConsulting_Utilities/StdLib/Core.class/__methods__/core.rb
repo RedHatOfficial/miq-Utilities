@@ -200,15 +200,49 @@ module RedHatConsulting_Utilities
         rbac_array
       end
 
+      # Checks if the object is eligible for use, based on @rbac_array and if not archived & not orphaned
+      # @param obj MIQ taggable object to verify against RBAC
       def object_eligible?(obj)
-        return false if obj.archived || obj.orphaned
-        @rbac_array.each do |rbac_hash|
-          rbac_hash.each do |rbac_category, rbac_tags|
-            Array.wrap(rbac_tags).each { |rbac_tag_entry| return false unless obj.tagged_with?(rbac_category, rbac_tag_entry) }
+        return false if (obj.respond_to?(:archived) && obj.archived) || (obj.respond_to?(:orphaned) && obj.orphaned)
+        object_matches_tag_filter?(obj, @rbac_array)
+      end
+
+      # Checks the given object matches by tag against the provided tag_filter.
+      #
+      # This requires that the object has each tag value in each tag category to pass
+      #
+      # @param obj MIQ taggable object to check
+      # @param hash tag_filter hash in the format of [ {'cat1'=>'val1'}, {'cat1'=> 'val2'}, {'cat2' =>'val3'}]
+      def object_matches_tag_filter?(obj, tag_filter)
+        tag_filter.each do |filter_hash|
+          filter_hash.each do |filter_category, filter_tags|
+            Array.wrap(filter_tags).each do |filter_tag_entry|
+              return false unless obj.tagged_with?(filter_category.to_s, filter_tag_entry)
+            end
           end
           true
         end
       end
+
+      # Checks the given object matches by tag against the provided tag_filter
+      #
+      # This requires that the object has any at least one tag value in each tag category
+      #
+      # @param obj MIQ taggable object to check
+      # @param hash tag_filter hash in the format of [ {'cat1'=>'val1'}, {'cat1'=> 'val2'}, {'cat2' =>'val3'}]
+      def object_matches_any_tag_filter?(obj, tag_filter)
+        tag_filter.each do |filter_hash|
+          filter_hash.each do |filter_category, filter_tags|
+            category_ok = false
+            Array.wrap(filter_tags).each do |filter_tag_entry|
+              category_ok = true if obj.tagged_with?(filter_category.to_s, filter_tag_entry)
+            end
+            return false unless category_ok
+          end
+          true
+        end
+      end
+
 
       # Perform a method retry for the given reason
       #
@@ -266,6 +300,11 @@ module RedHatConsulting_Utilities
           #merge the ws_values, dialog, top level options into one list to make it easier to search
           options = options.merge(options[:ws_values]) if options[:ws_values]
           options = options.merge(options[:dialog])    if options[:dialog]
+        when 'vm_retire_task'
+          vm_retire_task = $evm.root['vm_retire_task']
+          dump_object('vm_retire_task', vm_retire_task) if @DEBUG
+          vm = get_param(:vm)
+          options = vm_retire_task['options']
         when 'automation_task'
           # get root objet
           automation_task =  @handle.root['automation_task']
@@ -294,9 +333,19 @@ module RedHatConsulting_Utilities
         end
 
         # standerdize the option keys
-        options = options.symbolize_keys()
+        options = options.symbolize_keys() if options.present?
 
         return vm,options
+      end
+
+      # Get all of the network configuration instances.
+      #
+      # @return Array of all of the network configuration instances
+      NETWORK_CONFIGURATION_URI = 'Infrastructure/Network/Configuration'.freeze
+      def get_network_configurations()
+        network_instances = @handle.vmdb("MiqAeDomain").all.collect { |domain| $evm.instance_find("/#{domain.name}/#{NETWORK_CONFIGURATION_URI}/*") }
+        network_instances = Hash[*network_instances.collect{|h| h.to_a}.flatten]
+        return network_instances
       end
 
       # Create a Tag  Category if it does not already exist
