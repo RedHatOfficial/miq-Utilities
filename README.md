@@ -25,7 +25,7 @@ The high level features of this ManageIQ extension.
     * VMWare customized folder placement
   * Providers / Clusters / Hosts
     * Dynamic dialog methods and instances for getting the LANs for the selected object and for tagging those LANs
-    * Method for determining templated based on a selected location tag on providers and OS tag on tempaltes
+    * Method for determining templated based on a selected location tag on providers and OS tag on templates
 * Service
   * Thread safe (multiple simultaneous provisions) set VM names method with user provided prefix for use with service provisoning state machine
   * `Infrastructure/VM/Provisioning/Naming/vmname` implementation with support for variable suffix counter length and specified domain name
@@ -108,7 +108,7 @@ Using the commented code in settings.rb as a template, create a new (ruby) class
 and has a PRIORITY and SETTINGS class values.
 
 Copy our settings.rb to a high priority domain. Configure it to have embedded methods of all other settings.rb you wish
-to include (but not the one from this project). Ordered inclusion is impossible to guarentee with the UX currently,
+to include (but not the one from this project). Ordered inclusion is impossible to guarantee with the UX currently,
 the PRIORITY setting, however, is honoured in merging the hashes. In practice, you are going to want to use
 non-overlapping key values, or manually reconcile  the desired values in the settings.rb in the high priority domain.
 
@@ -116,9 +116,9 @@ non-overlapping key values, or manually reconcile  the desired values in the set
 # Provision Dialogs
 
 * `miq_provision_redhat_dialogs_template_no_required_fields`
-  * a clone of `miq_provision_redhat_dialogs_template` only with all required fields set to not required. This is useful when calling `create_provision_request` and not wanting to pass in all fields and rather determinging them later. For exampl determing the `vlan` bassed on placement rather then before calling `create_provision_request`.
+  * a clone of `miq_provision_redhat_dialogs_template` only with all required fields set to not required. This is useful when calling `create_provision_request` and not wanting to pass in all fields and rather determining them later. For example determining the `vlan` bassed on placement rather then before calling `create_provision_request`.
 * miq_provision_vmware_dialogs_template_no_required_fields.yaml
-  * a clone of `miq_provision_vmware_dialogs_template` only with all required fields set to not required. This is useful when calling `create_provision_request` and not wanting to pass in all fields and rather determinging them later. For exampl determing the `vlan` bassed on placement rather then before calling `create_provision_request`.
+  * a clone of `miq_provision_vmware_dialogs_template` only with all required fields set to not required. This is useful when calling `create_provision_request` and not wanting to pass in all fields and rather determining them later. For example determining the `vlan` bassed on placement rather then before calling `create_provision_request`.
 
 # Install
 0. Install dependencies
@@ -145,7 +145,7 @@ or, e.g.,
 $ bundle exec rspec --format documentation --pattern spec/content/automate/RedHatConsulting_Utilities/**/*_spec.rb
 
 # Branches and Tags
-The master branch of this repoistory will aim to support the current CloudForms release.
+The master branch of this repository will aim to support the current CloudForms release.
 If breaking changes for previous CloudForms versions are introduced in Master, version specific branches and tags will be created for those previous versions, as long as those releases are still supported by Red Hat. The version-specific release branches will be no longer be maintained once that version of CloudForms is end of life.
 
 CloudForms Product Lifecycle Information:
