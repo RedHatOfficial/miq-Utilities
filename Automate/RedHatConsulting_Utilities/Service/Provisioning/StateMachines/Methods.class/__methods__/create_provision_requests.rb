@@ -208,13 +208,47 @@ module RedHatConsulting_Utilities
               additional_values[:number_of_vms] = number_of_vms_per_request
               # === END: additional_values (AKA: ws_values)
 
+              # === START:  Remove the index from the tags hash
+              #
+              # Remodel the tags hash to conform with the requirements of 'create_provision_request'.
+              # The current tags hash looks like this:
+              # keys = {0=>{:service=>["gen"]}, 1=>{:function=>["app"]}}
+              #
+              # The 'create_provision_request' function requires a tag hash like this:
+              # {:service=>"gen", :function=>"app"}
+              #
+              @handle.log(:info, "tags before removing numbered index => #{tags}") if @DEBUG
+              # Only run if there is an array in the tags hash
+              unless tags[0].nil?
+                # Create an empty hash, the processed values will go in tags_no_index
+                tags_no_index = {}
+                tags.each do |(index,tag)|
+                  # Determine if the tag_value is an array, if so, remove the array
+                  tag.each do |(tag_name, tag_value)|
+                    if tag_value.kind_of?(Array)
+                      tag_no_value_array = { tag_name => tag_value.first }
+                    else
+                      tag_no_value_array = { tag_name => tag_value }
+                    end
+                    # Merge the processed tag back into tags_no_index
+                    tags_no_index = tags_no_index.merge(tag_no_value_array)
+                  end
+                end
+              else
+                # Proceed without editing if the tags hash does not have any numbered index
+                tags_no_index = tags
+              end
+              @handle.log(:info, "tags after removing numbered index => #{tags_no_index}") if @DEBUG
+              # === END: Remove the index from the tags hash
+
+
               # Setup the parameters needed for request
               build_request = {
                 :version           => '1.1',
                 :template_fields   => template_fields,
                 :vm_fields         => vm_fields,
                 :requester         => requester,
-                :tags              => tags,
+                :tags              => tags_no_index,
                 :additional_values => additional_values,
                 :ems_custom_attrs  => {},
                 :miq_custom_attrs  => {}
