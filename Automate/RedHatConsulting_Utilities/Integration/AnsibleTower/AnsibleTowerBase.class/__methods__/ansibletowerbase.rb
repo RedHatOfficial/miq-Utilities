@@ -91,8 +91,7 @@ module Integration
       #
       # @param vm object
       def inventory_hostname( vm )
-        vm_hostname   = vm.hostnames.first unless vm.hostnames.nil? or vm.hostnames.empty?
-        vm_hostname ||= vm.name
+        vm_hostname = vm.name
         error( 'Unable to determine VM Hostname for Ansible Tower Inventory') if ( vm_hostname.nil? or vm_hostname.empty? )
         @handle.log(:info, "VM Hostname determined for Ansible Tower Inventory: #{vm_hostname}") if @DEBUG
         return vm_hostname

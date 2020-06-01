@@ -302,7 +302,6 @@ module RedHatConsulting_Utilities
           options = options.merge(options[:dialog])    if options[:dialog]
         when 'vm_retire_task'
           vm_retire_task = $evm.root['vm_retire_task']
-          dump_object('vm_retire_task', vm_retire_task) if @DEBUG
           vm = get_param(:vm)
           options = vm_retire_task['options']
         when 'automation_task'
